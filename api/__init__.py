@@ -1,7 +1,5 @@
 # coding=utf-8
 
-# coding=utf-8
-
 # vim: tabstop=4 shiftwidth=4 softtabstop=4
 
 #
@@ -43,5 +41,4 @@ def main(global_config, **settings):
     '''
     This is the entry point for paste into the OCCI OS world.
     '''
-    # TODO(tmetsch): point to correct OCCI OS app.
     return wsgi.OCCIApplication()
