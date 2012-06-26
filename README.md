@@ -37,13 +37,13 @@ Make sure the API (name from above) is enabled in nova.conf:
 	
 #### Hacking the port number
 
-Currently nova compute will start the app you defined on an random port. If you want to have it on a predefined code you will need to edit the 'flags.py' file <path to nova>/nova/:
+Currently nova compute will start the OCCI API on a random port. If you want to have it on a predefined port you will need to edit the 'flags.py' file in <path to nova>/nova/:
 
     cfg.IntOpt('occiapi_listen_port',
-               default=8989,
+               default=8787,
                help='the port for external test apps'),
 
-Again the name you provide here should be identical to the name of the app you provided above!
+Again the name you provide here should be identical to the name of the app you provided above (In this case 'occiapi')!
 			   
 ### For development
 
