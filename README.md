@@ -9,8 +9,7 @@ Usage
 1. Install this egg: python setup.py install (later maybe pip install occi-os)
 2. Configure OpenStack - Add application to api-paste of nova and enable the API
 
-Configuration
-^^^^^^^^^^^^^
+### Configuration
 
 Make sure an application is configured in api-paste.ini (name can be picked yourself):
 
@@ -27,8 +26,7 @@ Make sure the API (name from above) is enabled in nova.conf:
 	enabled_apis=ec2,occiapi,osapi_compute,osapi_volume,metadata,testapp
 	[...]
 	
-For development
-^^^^^^^^^^^^^^^
+### For development
 
 Make sure the nova compute api is in the path for Python and if you wanna test the app run:
 
