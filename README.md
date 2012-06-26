@@ -13,19 +13,38 @@ Usage
 
 Make sure an application is configured in api-paste.ini (name can be picked yourself):
 
-	[composite:testapp]
-	use = egg:Paste#urlmap
-	/: testapp11
+	########
+	# OCCI #
+	########
 
-	[app:testapp11]
+	[composite:occiapi]
+	use = egg:Paste#urlmap
+	/: occiapppipe
+
+	[pipeline:occiapppipe]
+	pipeline = authtoken keystonecontext occiapp
+	# with request body size limiting and rate limiting
+	# pipeline = sizelimit authtoken keystonecontext ratelimit occiapp
+
+	[app:occiapp]
 	use = egg:occi-os#occi_app
 
 Make sure the API (name from above) is enabled in nova.conf:
 
 	[...]
-	enabled_apis=ec2,occiapi,osapi_compute,osapi_volume,metadata,testapp
+	enabled_apis=ec2,occiapi,osapi_compute,osapi_volume,metadata
 	[...]
 	
+#### Hacking the port number
+
+Currently nova compute will start the app you defined on an random port. If you want to have it on a predefined code you will need to edit the 'flags.py' file <path to nova>/nova/:
+
+    cfg.IntOpt('occiapi_listen_port',
+               default=8989,
+               help='the port for external test apps'),
+
+Again the name you provide here should be identical to the name of the app you provided above!
+			   
 ### For development
 
 Make sure the nova compute api is in the path for Python and if you wanna test the app run:
