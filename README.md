@@ -26,3 +26,10 @@ Make sure the API (name from above) is enabled in nova.conf:
 	[...]
 	enabled_apis=ec2,occiapi,osapi_compute,osapi_volume,metadata,testapp
 	[...]
+	
+For development
+^^^^^^^^^^^^^^^
+
+Make sure the nova compute api is in the path for Python and if you wanna test the app run:
+
+	paster serve api-paste.ini --reload
