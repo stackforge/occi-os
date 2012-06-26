@@ -45,7 +45,7 @@ setup(
     url='http://intel.com',
     license='Apache License, Version 2.0',
     include_package_data=True,
-    packages=['api',],
+    packages=['api','api.compute','api.network','api.storage','api.extensions'],
     zip_safe=False,
     install_requires=[
         'setuptools',

@@ -36,7 +36,7 @@ sample_app entry point is defined in setup.py:
 which point to this function call (<module name>:function).
 '''
 
-from api.wsgi_app import simple_app
+from api import wsgi
 
 
 def main(global_config, **settings):
@@ -44,4 +44,4 @@ def main(global_config, **settings):
     This is the entry point for paste into the OCCI OS world.
     '''
     # TODO(tmetsch): point to correct OCCI OS app.
-    return simple_app
+    return wsgi.OCCIApplication()
