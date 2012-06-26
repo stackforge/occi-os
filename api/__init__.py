@@ -28,7 +28,7 @@ sample_app entry point is defined in setup.py:
 
     entry_points="""
          [paste.app_factory]
-         sam#ple_app = api:main
+         sample_app = api:main
     """,
 
 which point to this function call (<module name>:function).

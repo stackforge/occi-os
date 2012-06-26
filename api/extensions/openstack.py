@@ -255,6 +255,17 @@ class OsComputeActionBackend(backend.ActionBackend):
                 LOG.error(msg)
                 exc.HTTPBadRequest(explanation=msg)
 
+        cached_nwinfo = compute.utils.get_nw_info_for_instance\
+            (instance)
+        if not cached_nwinfo:
+            msg = _('No nw_info cache associated with instance')
+            raise webob.exc.HTTPBadRequest(explanation=msg)
+
+        fixed_ips = cached_nwinfo.fixed_ips()
+        if not fixed_ips:
+            msg = _('No fixed ips associated to instance')
+            raise webob.exc.HTTPBadRequest(explanation=msg)
+
         if 'org.openstack.network.floating.pool' not in attributes:
             pool = None
         else:
@@ -262,12 +273,38 @@ class OsComputeActionBackend(backend.ActionBackend):
 
         address = self.network_api.allocate_floating_ip(context, pool)
 
-        self.compute_api.associate_floating_ip(context, instance, address)
+        if len(fixed_ips) > 1:
+            msg = _('multiple fixed_ips exist, using the first: %s')
+            LOG.warning(msg, fixed_ips[0]['address'])
+
+        try:
+            self.network_api.associate_floating_ip(context, instance,
+                                                   floating_address=address,
+                                                   fixed_address=fixed_ips[0]['address'])
+        except exception.FloatingIpAssociated:
+            msg = _('floating ip is already associated')
+            raise webob.exc.HTTPBadRequest(explanation=msg)
+        except exception.NoFloatingIpInterface:
+            msg = _('l3driver call to add floating ip failed')
+            raise webob.exc.HTTPBadRequest(explanation=msg)
+        except Exception:
+            msg = _('Error. Unable to associate floating ip')
+            LOG.exception(msg)
+            raise webob.exc.HTTPBadRequest(explanation=msg)
+
 
         # once the address is allocated we need to reflect that fact
         # on the resource holding it.
         entity.mixins.append(OS_FLOATING_IP_EXT)
         entity.attributes['org.openstack.network.floating.ip'] = address
+
+
+
+
+
+
+
+
 
     def _os_deallocate_floating_ip(self, entity, context):
         """

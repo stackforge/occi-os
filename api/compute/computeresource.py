@@ -36,7 +36,6 @@ from nova import image
 from nova import utils
 from nova import log as logging
 from nova.network import api as net_api
-from nova.rpc import common as rpc_common
 
 
 FLAGS = flags.FLAGS

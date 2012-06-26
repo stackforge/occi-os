@@ -16,6 +16,7 @@
 #    under the License.
 
 import random
+from nova.openstack.common import importutils
 
 from occi import backend
 from occi import core_model
@@ -25,7 +26,6 @@ from nova import compute
 from nova import db
 from nova import flags
 from nova import log as logging
-from nova import utils
 
 
 # TODO(dizz): Remove SSH Console and VNC Console once URI support is added to
@@ -124,7 +124,7 @@ class SecurityGroupBackend(backend.UserDefinedMixinBackend):
     def __init__(self):
         super(SecurityGroupBackend, self).__init__()
         self.compute_api = compute.API()
-        self.sgh = utils.import_object(FLAGS.security_group_handler)
+        self.sgh = importutils.import_object(FLAGS.security_group_handler)
 
     def init_sec_group(self, category, extras):
         """
@@ -141,7 +141,8 @@ class SecurityGroupBackend(backend.UserDefinedMixinBackend):
         group_description = (category.title.strip()
                                             if category.title else group_name)
 
-        self.compute_api.ensure_default_security_group(context)
+        # TODO(dizz): method seems to be gone!
+        #self.compute_api.ensure_default_security_group(context)
         if db.security_group_exists(context, context.project_id, group_name):
             raise exc.HTTPBadRequest(
                 explanation=_('Security group %s already exists') % group_name)
@@ -187,7 +188,7 @@ class SecurityRuleBackend(backend.KindBackend):
     def __init__(self):
         super(SecurityRuleBackend, self).__init__()
         self.compute_api = compute.API()
-        self.sgh = utils.import_object(FLAGS.security_group_handler)
+        self.sgh = importutils.import_object(FLAGS.security_group_handler)
 
     def create(self, entity, extras):
         """
@@ -242,7 +243,9 @@ class SecurityRuleBackend(backend.KindBackend):
         cidr = entity.attributes['occi.network.security.range'].strip()
         if len(cidr) <= 0:
             cidr = '0.0.0.0/0'
-        if utils.is_valid_cidr(cidr):
+        # TODO(dizz): find corresponding call in master!
+        #if utils.is_valid_cidr(cidr):
+        if True:
             sg_rule['cidr'] = cidr
         else:
             raise exc.HTTPBadRequest()
@@ -314,7 +317,8 @@ class SecurityRuleBackend(backend.KindBackend):
         """
         msg = _('Deleting a network security rule')
         LOG.info(msg)
-        self.compute_api.ensure_default_security_group(extras['nova_ctx'])
+        # TODO(dizz): method seems to be gone!
+        # self.compute_api.ensure_default_security_group(extras['nova_ctx'])
         try:
             rule = db.security_group_rule_get(extras['nova_ctx'],
                                         int(entity.attributes['occi.core.id']))
@@ -322,7 +326,8 @@ class SecurityRuleBackend(backend.KindBackend):
             raise exc.HTTPNotFound()
 
         group_id = rule['parent_group_id']
-        self.compute_api.ensure_default_security_group(extras['nova_ctx'])
+        # TODO(dizz): method seems to be gone!
+        # self.compute_api.ensure_default_security_group(extras['nova_ctx'])
         security_group = db.security_group_get(extras['nova_ctx'], group_id)
 
         db.security_group_rule_destroy(extras['nova_ctx'], rule['id'])

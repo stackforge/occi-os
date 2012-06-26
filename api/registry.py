@@ -17,7 +17,7 @@
 
 from occi import registry
 
-from nova.api.occi.extensions import occi_future
+from api.extensions import occi_future
 
 
 class OCCIRegistry(registry.NonePersistentRegistry):

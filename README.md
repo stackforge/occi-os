@@ -39,12 +39,15 @@ Make sure the API (name from above) is enabled in nova.conf:
 
 Currently nova compute will start the OCCI API on a random port. If you want to have it on a predefined port you will need to edit the 'flags.py' file in <path to nova>/nova/:
 
+    cfg.ListOpt('enabled_apis',
+               default=['occiapi', 'ec2', 'osapi_compute', 'osapi_volume', 'metadata'],
+               help='a list of APIs to enable by default'),
     cfg.IntOpt('occiapi_listen_port',
                default=8787,
                help='the port for external test apps'),
 
 Again the name you provide here should be identical to the name of the app you provided above (In this case 'occiapi')!
-			   
+
 ### For development
 
 Make sure the nova compute api is in the path for Python and if you wanna test the app run:
