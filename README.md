@@ -48,10 +48,10 @@ Currently nova compute will start the OCCI API on a random port. If you want to 
 
 Again the name you provide here should be identical to the name of the app you provided above (In this case 'occiapi')!
 
-You can also set the port option via the `nova.conf` configuration file:
+When add those two options you can also set the port option via the `nova.conf` configuration file:
 
     [...]
-    occiapi_listen_port=8787
+    occiapi_listen_port=9999
     [...]
 
 
