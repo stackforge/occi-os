@@ -22,13 +22,7 @@ from occi import backend
 from occi.extensions import infrastructure
 from webob import exc
 
-from nova import compute
-from nova import log as logging
-from nova import volume
-
-
-#Hi I'm a logger, use me! :-)
-LOG = logging.getLogger('nova.api.occi.backends.storage.link')
+from api import nova_glue
 
 
 class StorageLinkBackend(backend.KindBackend):
@@ -36,27 +30,18 @@ class StorageLinkBackend(backend.KindBackend):
     A backend for the storage links.
     """
 
-    def __init__(self):
-        super(StorageLinkBackend, self).__init__()
-        self.volume_api = volume.API()
-        self.compute_api = compute.API()
-
     def create(self, link, extras):
         """
         Creates a link from a compute instance to a storage volume.
         The user must specify what the device id is to be.
         """
-        msg = _('Linking compute to storage via StorageLink.')
-        LOG.info(msg)
+        context = extras['nova_ctx']
+        inst_to_attach = get_inst_to_attach(link, context)
+        vol_to_attach = get_vol_to_attach(link, context)
 
-        inst_to_attach = self._get_inst_to_attach(extras['nova_ctx'], link)
-        vol_to_attach = self._get_vol_to_attach(extras['nova_ctx'], link)
-
-        self.compute_api.attach_volume(
-                                extras['nova_ctx'],
-                                inst_to_attach,
-                                vol_to_attach['id'],
-                                link.attributes['occi.storagelink.deviceid'])
+        uid = link.attributes['occi.storagelink.deviceid']
+        nova_glue.attach_volume(inst_to_attach, vol_to_attach['id'], uid,
+                                context)
 
         link.attributes['occi.core.id'] = str(uuid.uuid4())
         link.attributes['occi.storagelink.deviceid'] = \
@@ -64,47 +49,55 @@ class StorageLinkBackend(backend.KindBackend):
         link.attributes['occi.storagelink.mountpoint'] = ''
         link.attributes['occi.storagelink.state'] = 'active'
 
-    def _get_inst_to_attach(self, context, link):
-        """
-        Gets the compute instance that is to have the storage attached.
-        """
-        if link.target.kind == infrastructure.COMPUTE:
-            instance = self.compute_api.get(context,
-                                        link.target.attributes['occi.core.id'])
-        elif link.source.kind == infrastructure.COMPUTE:
-            instance = self.compute_api.get(context,
-                                        link.source.attributes['occi.core.id'])
-        else:
-            raise exc.HTTPBadRequest()
-        return instance
-
-    def _get_vol_to_attach(self, context, link):
-        """
-        Gets the storage instance that is to have the compute attached.
-        """
-        if link.target.kind == infrastructure.STORAGE:
-            vol_to_attach = self.volume_api.get(context,
-                                        link.target.attributes['occi.core.id'])
-        elif link.source.kind == infrastructure.STORAGE:
-            vol_to_attach = self.volume_api.get(context,
-                                        link.source.attributes['occi.core.id'])
-        else:
-            raise exc.HTTPBadRequest()
-
-        return vol_to_attach
 
     def delete(self, link, extras):
         """
         Unlinks the the compute from the storage resource.
         """
-        msg = _('Unlinking entity from storage via StorageLink.')
-        LOG.info(msg)
-
         try:
-            vol_to_detach = self._get_vol_to_attach(extras['nova_ctx'], link)
-            self.compute_api.detach_volume(extras['nova_ctx'],
-                                                        vol_to_detach['id'])
+            vol_to_detach = sget_vol_to_attach(extras['nova_ctx'], link)
+            nova_glue.detach_volume(vol_to_detach['id'], extras['nova_ctx'])
         except Exception, e:
-            msg = _('Error in detaching storage volume.')
-            LOG.error(msg)
-            raise e
+            msg = 'Error in detaching storage volume.'
+            raise AttributeError(msg)
+
+# HELPERS
+
+def get_inst_to_attach(link, context):
+    """
+    Gets the compute instance that is to have the storage attached.
+    """
+    if link.target.kind == infrastructure.COMPUTE:
+        instance = nova_glue.get_vm_instance(link.target.attributes['occi' \
+                                                                    '.core' \
+                                                                    '.id'],
+                                             context)
+    elif link.source.kind == infrastructure.COMPUTE:
+        instance = nova_glue.get_vm_instance(link.source.attributes['occi' \
+                                                                    '.core' \
+                                                                    '.id'],
+                                             context)
+    else:
+        raise exc.HTTPBadRequest()
+    return instance
+
+
+def get_vol_to_attach(link, context):
+    """
+    Gets the storage instance that is to have the compute attached.
+    """
+    if link.target.kind == infrastructure.STORAGE:
+        vol_to_attach = nova_glue.get_storage_instance(link.target
+                                                       .attributes['occi' \
+                                                                   '.core' \
+                                                                   '.id'],
+                                                       context)
+    elif link.source.kind == infrastructure.STORAGE:
+        vol_to_attach = nova_glue.get_storage_instance(link.source
+                                                       .attributes['occi'\
+                                                                   '.core'\
+                                                                   '.id'],
+                                                       context)
+    else:
+        raise exc.HTTPBadRequest()
+    return vol_to_attach

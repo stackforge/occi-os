@@ -17,10 +17,9 @@
 
 import os
 
-from nova import log as logging
+import logging
 
-
-LOG = logging.getLogger('nova.api.occi.extensions')
+LOG = logging.getLogger()
 EXTENSIONS = []
 
 
@@ -33,7 +32,7 @@ def load_extensions():
     pth = pth[0] + pth[1]
 
     # Walkthrough the extensions directory
-    msg = _('Loading the following extensions...')
+    msg = 'Loading the following extensions...'
     LOG.info(msg)
     for _dirpath, _dirnames, filenames in os.walk(pth):
         for filename in filenames:
@@ -43,7 +42,7 @@ def load_extensions():
                 exec('from %s import %s' % (__package__, mod))
                 extn = eval(mod).get_extensions()
                 EXTENSIONS.append(extn)
-                msg = _('Loading occi extension: %s') % extn
+                msg = ('Loading occi extension: %s') % extn
                 LOG.info(msg)
 
 

@@ -24,10 +24,12 @@ place where nova API calls should be made!
 # and out, an nothing else.
 # TODO(tmetsch): unify exception handling
 
-from nova import compute, exception
+from nova import compute
+from nova import exception
 from nova import image
 from nova import network
 from nova import utils
+from nova import volume
 from nova.compute import vm_states, task_states, instance_types
 from nova.flags import FLAGS
 
@@ -43,6 +45,7 @@ from webob import exc
 
 compute_api = compute.API()
 network_api = network.API()
+volume_api = volume.API()
 image_api = image.get_default_image_service()
 
 # COMPUTE
@@ -430,6 +433,11 @@ def get_adapter_info(instance, context):
 # STORAGE
 
 
+def get_storage_instance(uid, context):
+    instance = volume_api.get(context, uid)
+    return instance
+
+
 def get_image_architecture(instance, context):
     """
     Extract architecture from either:
@@ -452,3 +460,21 @@ def get_image_architecture(instance, context):
         # if all attempts fail set it to a default value
         arch = 'x86'
     return arch
+
+
+def attach_volume(inst_to_attach, vol_to_attach, uid, context):
+    """
+    Attaches a storage volume.
+    """
+    compute_api.attach_volume(
+                    context,
+                    inst_to_attach,
+                    vol_to_attach,
+                    uid)
+
+
+def detach_volume(uid, context):
+    """
+    Setach a storage volume.
+    """
+    compute_api.detach_volumne(context, uid)

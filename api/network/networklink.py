@@ -18,9 +18,6 @@
 from occi import backend
 from webob import exc
 
-from nova import log as logging
-
-
 # With Quantum:
 #     TODO(dizz): implement create - note: this must handle either
 #                 nova-network or quantum APIs - detect via flags and
@@ -28,10 +25,6 @@ from nova import log as logging
 #                 implement delete
 #                 implement update
 # Also see nova/api/openstack/compute/contrib/multinic.py
-
-
-#Hi I'm a logger, use me! :-)
-LOG = logging.getLogger('nova.api.occi.backends.network.link')
 
 
 class NetworkInterfaceBackend(backend.KindBackend):

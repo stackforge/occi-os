@@ -27,15 +27,6 @@
 from occi import backend
 from webob import exc
 
-from nova import flags
-from nova import log as logging
-
-
-#Hi I'm a logger, use me! :-)
-LOG = logging.getLogger('nova.api.occi.backends.network')
-
-FLAGS = flags.FLAGS
-
 
 class NetworkBackend(backend.KindBackend, backend.ActionBackend):
     """
