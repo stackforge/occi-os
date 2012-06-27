@@ -27,6 +27,7 @@ place where nova API calls should be made!
 from nova import compute, exception
 from nova import image
 from nova import network
+from nova import utils
 from nova.compute import vm_states, task_states, instance_types
 from nova.flags import FLAGS
 
@@ -56,7 +57,7 @@ def create_vm(entity, context):
     else:
         name = 'None'
     key_name = key_data = None
-    password = compute.utils.generate_password(FLAGS.password_length)
+    password = utils.generate_password(FLAGS.password_length)
     access_ip_v4 = None
     access_ip_v6 = None
     user_data = None
@@ -114,8 +115,7 @@ def create_vm(entity, context):
         inst_type = compute.instance_types.get_default_instance_type()
         msg = ('No resource template was found in the request. '
                 'Using the default: %s') % inst_type['name']
-        LOG.warn(msg)
-
+        # TODO(tmetsch): log...
     # make the call
     try:
         (instances, _reservation_id) = compute_api.create(
@@ -408,7 +408,8 @@ def get_adapter_info(instance, context):
     # catches an odd error whereby no network info is returned back
     if len(sj) <= 0:
         msg = 'No network info was returned either live or cached.'
-        LOG.warn(msg)
+
+        # TODO(tmetsch): log...
         return vm_net_info
 
     vm_net_info['vm_iface'] = sj[0]['network']['meta']['bridge_interface']
@@ -439,8 +440,7 @@ def get_image_architecture(instance, context):
     - else return a default of x86
     """
     arch = ''
-    print 'BOOJA - might be prob here:', dir(instance)
-    id = instance['image_href']
+    id = instance['image_ref']
     img = image_api.show(context, id)
     img_properties = img['properties']
     if 'arch' in img_properties:
