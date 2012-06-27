@@ -239,6 +239,6 @@ class StorageBackend(backend.KindBackend, backend.ActionBackend):
             else:
                 msg = _('Cannot update the supplied attributes.')
                 LOG.error()
-                raise exc.HTTPBadRequest()
+                raise exc.HTTPBadRequest(explanation=msg)
         else:
             raise exc.HTTPBadRequest()

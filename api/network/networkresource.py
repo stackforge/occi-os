@@ -47,7 +47,7 @@ class NetworkBackend(backend.KindBackend, backend.ActionBackend):
     def delete(self, entity, extras):
         pass
 
-    def action(self, entity, action, extras):
+    def action(self, entity, action, attributes, extras):
         raise exc.HTTPBadRequest()
 
 

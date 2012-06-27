@@ -216,8 +216,7 @@ class SecurityRuleBackend(backend.KindBackend):
         """
         Create and validate the security rule.
         """
-        sg_rule = {}
-        sg_rule['id'] = random.randrange(0, 99999999)
+        sg_rule = {'id': random.randrange(0, 99999999)}
         entity.attributes['occi.core.id'] = str(sg_rule['id'])
         sg_rule['parent_group_id'] = sec_grp_id
         prot = \
@@ -228,13 +227,13 @@ class SecurityRuleBackend(backend.KindBackend):
             raise exc.HTTPBadRequest()
         from_p = entity.attributes['occi.network.security.to'].strip()
         from_p = int(from_p)
-        if (type(from_p) is int) and from_p > 0 and from_p <= 65535:
+        if (type(from_p) is int) and 0 < from_p <= 65535:
             sg_rule['from_port'] = from_p
         else:
             raise exc.HTTPBadRequest()
         to_p = entity.attributes['occi.network.security.to'].strip()
         to_p = int(to_p)
-        if (type(to_p) is int) and to_p > 0 and to_p <= 65535:
+        if (type(to_p) is int) and 0 < to_p <= 65535:
             sg_rule['to_port'] = to_p
         else:
             raise exc.HTTPBadRequest()
@@ -279,7 +278,7 @@ class SecurityRuleBackend(backend.KindBackend):
         for mixin in entity.mixins:
             if SEC_GROUP in mixin.related:
                 sec_mixin = mixin
-                sec_mixin_present = sec_mixin_present + 1
+                sec_mixin_present += 1
 
         if not sec_mixin_present:
             # no mixin of the type security group was found

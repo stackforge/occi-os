@@ -149,7 +149,7 @@ class ComputeBackend(backend.KindBackend, backend.ActionBackend):
             LOG.error(msg)
             raise AttributeError(msg=unicode(msg))
         #If no security group, ensure the default is applied
-        if len(sg_names) == 0:
+        if not len(sg_names):
             sg_names.append('default')
 
         flavor_name = r.term
@@ -208,10 +208,11 @@ class ComputeBackend(backend.KindBackend, backend.ActionBackend):
             raise exc.HTTPBadRequest(explanation=msg)
         except exception.SecurityGroupNotFound as error:
             raise exc.HTTPBadRequest(explanation=unicode(error))
-        except rpc_common.RemoteError as err:
-            msg = "%(err_type)s: %(err_msg)s" % \
-                  {'err_type': err.exc_type, 'err_msg': err.value}
-            raise exc.HTTPBadRequest(explanation=msg)
+        # TODO: check where this has gone...
+#        except rpc_common.RemoteError as err:
+#            msg = "%(err_type)s: %(err_msg)s" % \
+#                  {'err_type': err.exc_type, 'err_msg': err.value}
+#            raise exc.HTTPBadRequest(explanation=msg)
 
         #add resource attribute values
         resource.attributes['occi.core.id'] = instances[0]['uuid']
@@ -285,9 +286,9 @@ class ComputeBackend(backend.KindBackend, backend.ActionBackend):
             image_service = image.get_default_image_service()
             img = image_service.show(context, os_template_mixin.os_id)
             img_props = img['properties']
-            if ('arch' in img_props):
+            if 'arch' in img_props:
                 arch = img['properties']['arch']
-            elif ('architecture' in img_props):
+            elif 'architecture' in img_props:
                 arch = img['properties']['architecture']
         # if all attempts fail set it to a default value
         if arch == '':
@@ -501,7 +502,7 @@ class ComputeBackend(backend.KindBackend, backend.ActionBackend):
         # confirm resized server
         if instance['vm_state'] in (vm_states.ACTIVE,
                                     task_states.UPDATING_PASSWORD,
-                                    task_states.RESIZE_VERIFY):
+                                    task_states.RESIZE_CONFIRMING):
             entity.attributes['occi.compute.state'] = 'active'
             entity.actions = [infrastructure.STOP,
                               infrastructure.SUSPEND,
@@ -541,8 +542,8 @@ class ComputeBackend(backend.KindBackend, backend.ActionBackend):
         # resize server confirm rebuild
         # revert resized server - OS (indirectly OCCI)
         elif instance['vm_state'] in (
-                       vm_states.RESIZING,
-                       vm_states.REBUILDING,
+                       vm_states.RESIZED,
+                       vm_states.BUILDING,
                        task_states.RESIZE_CONFIRMING,
                        task_states.RESIZE_FINISH,
                        task_states.RESIZE_MIGRATED,
@@ -610,7 +611,7 @@ class ComputeBackend(backend.KindBackend, backend.ActionBackend):
             tmpl = '%s%s' % (mixin.scheme, mixin.term)
             msg = _('Unrecognised mixin. %s') % tmpl
             LOG.error()
-            raise exc.HTTPBadRequest()
+            raise exc.HTTPBadRequest(explanation=msg)
 
     def _update_attrs(self, old, new):
         """

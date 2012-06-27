@@ -17,7 +17,7 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-'''
+"""
 This it the entry point for paste.
 
 Paste config file needs to point to egg:<package name>:<entrypoint name>:
@@ -26,19 +26,19 @@ Paste config file needs to point to egg:<package name>:<entrypoint name>:
 
 sample_app entry point is defined in setup.py:
 
-    entry_points="""
+    entry_points='''
          [paste.app_factory]
          sample_app = api:main
-    """,
+    ''',
 
 which point to this function call (<module name>:function).
-'''
+"""
 
 from api import wsgi
 
 
 def main(global_config, **settings):
-    '''
+    """
     This is the entry point for paste into the OCCI OS world.
-    '''
+    """
     return wsgi.OCCIApplication()

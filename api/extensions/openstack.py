@@ -24,6 +24,7 @@ from nova import exception
 from nova import logging
 from nova.network import api as net_api
 
+from nova.compute import utils as compute_utils
 
 # Hi I'm a logger, use me! :-)
 LOG = logging.getLogger('nova.api.occi.backends.compute.os')
@@ -153,9 +154,9 @@ class OsComputeActionBackend(backend.ActionBackend):
             self._os_create_image(entity, attributes, instance, context)
         elif action == OS_ALLOC_FLOATING_IP:
             self._os_allocate_floating_ip(entity, attributes, instance,
-                                                                    context)
+                                          context)
         elif action == OS_DEALLOC_FLOATING_IP:
-            self._os_deallocate_floating_ip(entity, context)
+            self._os_deallocate_floating_ip(entity, instance, context)
         else:
             raise exc.HTTPBadRequest()
 
@@ -255,7 +256,7 @@ class OsComputeActionBackend(backend.ActionBackend):
                 LOG.error(msg)
                 exc.HTTPBadRequest(explanation=msg)
 
-        cached_nwinfo = compute.utils.get_nw_info_for_instance\
+        cached_nwinfo = compute_utils.get_nw_info_for_instance\
             (instance)
         if not cached_nwinfo:
             msg = _('No nw_info cache associated with instance')
@@ -298,21 +299,13 @@ class OsComputeActionBackend(backend.ActionBackend):
         entity.mixins.append(OS_FLOATING_IP_EXT)
         entity.attributes['org.openstack.network.floating.ip'] = address
 
-
-
-
-
-
-
-
-
-    def _os_deallocate_floating_ip(self, entity, context):
+    def _os_deallocate_floating_ip(self, entity, instance, context):
         """
         This deallocates a floating ip from the compute resource.
         This returns the deallocated IP address to the pool.
         """
         address = entity.attributes['org.openstack.network.floating.ip']
-        self.network_api.disassociate_floating_ip(context, address)
+        self.network_api.disassociate_floating_ip(context, instance, address)
         self.network_api.release_floating_ip(context, address)
 
         # remove the mixin

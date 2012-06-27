@@ -27,10 +27,9 @@ class OCCIRegistry(registry.NonePersistentRegistry):
 
     def get_extras(self, extras):
         sec_extras = None
-        if extras != None:
-            sec_extras = {}
-            sec_extras['user_id'] = extras['nova_ctx'].user_id
-            sec_extras['project_id'] = extras['nova_ctx'].project_id
+        if extras is not None:
+            sec_extras = {'user_id': extras['nova_ctx'].user_id,
+                          'project_id': extras['nova_ctx'].project_id}
         return sec_extras
 
     def add_resource(self, key, resource, extras):
