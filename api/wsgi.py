@@ -22,7 +22,7 @@ from occi import wsgi as occi_wsgi
 
 
 # TODO(tmetsch): cleanup!
-from api.compute import computeresource
+from api.compute import compute_resource
 from api.compute import templates
 import extensions
 from api.extensions import occi_future
@@ -87,10 +87,10 @@ class OCCIApplication(occi_wsgi.Application, wsgi.Application):
         Registers the OCCI infrastructure resources to ensure compliance
         with GFD184
         """
-        compute_backend = computeresource.ComputeBackend()
+        compute_backend = compute_resource.ComputeBackend()
 
         if self.net_manager == "quantum":
-            msg = _('The quantum backend is currently not supported.')
+            msg = 'The quantum backend is currently not supported.'
             LOG.error(msg)
             raise Exception()
         elif self.net_manager == "nova":
