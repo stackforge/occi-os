@@ -11,5 +11,7 @@ pep8 --repeat --statistics --count api
 
 pyflakes api
 
+pychecker -# 99 api/*.py api/compute/*.py api/network/*.py api/storage/*.py api/extensions/*.py
+
 # TODO: create project!
 #epydoc epydoc.prj
