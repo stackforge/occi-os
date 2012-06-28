@@ -98,7 +98,6 @@ class ComputeBackend(KindBackend, ActionBackend):
 
     def update(self, old, new, extras):
         uid = old.attributes['occi.core.id']
-        instance = nova_glue.get_vm_instance(uid, extras['nova_ctx'])
 
         LOG.debug('Updating an Virtual machine: ', uid)
 
@@ -140,7 +139,6 @@ class ComputeBackend(KindBackend, ActionBackend):
         # As there is no callback mechanism to update the state
         # of computes known by occi, a call to get the latest representation
         # must be made.
-        instance = self.retrieve(entity, extras)
         context = extras['nova_ctx']
 
         if action not in entity.actions:
@@ -243,13 +241,7 @@ def set_console_info(entity, instance, extras):
         entity.links.append(ssh_console_link)
 
     if not vnc_console_present:
-        try:
-            console = self.compute_api.get_vnc_console(extras['nova_ctx'],
-                                                       instance, 'novnc')
-        except Exception:
-            msg = 'Console info is not available yet.'
-            LOG.debug(msg)
-            return
+        console = nova_glue.get_vnc_for_vm(instance, extras['nova_ctx'])
 
         identifier = str(uuid.uuid4())
         vnc_console = core_model.Resource(

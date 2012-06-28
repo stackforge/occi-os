@@ -17,10 +17,10 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-'''
+"""
 Setupstools script which defines an entry point which can be used for OCCI
 app later.
-'''
+"""
 
 from setuptools import setup
 
@@ -49,7 +49,7 @@ setup(
     zip_safe=False,
     install_requires=[
         'setuptools',
-        'pyssf'
+        'pyssf', "occi"
         ],
     entry_points='''
       [paste.app_factory]

@@ -20,22 +20,25 @@ This module will connect the backends with nova code. This is the *ONLY*
 place where nova API calls should be made!
 """
 
-# TODO(tmetsch): consistency checks - make sure OCCI entities are passed in
-# and out, an nothing else.
 # TODO(tmetsch): unify exception handling
+# TODO(tmetsch): sanitize the interface - make sure call parameters and
+# return values are consistent.
+import random
 
-from nova import compute
+from nova import compute, db
 from nova import exception
 from nova import image
 from nova import network
 from nova import utils
 from nova import volume
 from nova.compute import vm_states, task_states, instance_types
+from nova.compute import utils as compute_utils
 from nova.flags import FLAGS
 
 from api.compute import templates
 from api.extensions import occi_future
 from api.extensions import openstack
+from nova.openstack.common import importutils
 
 from occi.extensions import infrastructure
 
@@ -46,7 +49,9 @@ from webob import exc
 compute_api = compute.API()
 network_api = network.API()
 volume_api = volume.API()
+
 image_api = image.get_default_image_service()
+sec_handler = importutils.import_object(FLAGS.security_group_handler)
 
 # COMPUTE
 
@@ -90,15 +95,15 @@ def create_vm(entity, context):
             attr = 'org.openstack.credentials.publickey.data'
             key_data = entity.attributes[attr]
         elif mixin == openstack.OS_ADMIN_PWD_EXT:
-            password = entity.attributes['org.openstack.credentials' \
+            password = entity.attributes['org.openstack.credentials'\
                                          '.admin_pwd']
         elif mixin == openstack.OS_ACCESS_IP_EXT:
             attr = 'org.openstack.network.access.version'
             if entity.attributes[attr] == 'ipv4':
-                access_ip_v4 = entity.attributes['org.openstack.network' \
+                access_ip_v4 = entity.attributes['org.openstack.network'\
                                                  '.access.ip']
             elif entity.attributes[attr] == 'ipv6':
-                access_ip_v6 = entity.attributes['org.openstack.network' \
+                access_ip_v6 = entity.attributes['org.openstack.network'\
                                                  '.access.ip']
             else:
                 raise exc.HTTPBadRequest()
@@ -117,7 +122,7 @@ def create_vm(entity, context):
     else:
         inst_type = compute.instance_types.get_default_instance_type()
         msg = ('No resource template was found in the request. '
-                'Using the default: %s') % inst_type['name']
+               'Using the default: %s') % inst_type['name']
         # TODO(tmetsch): log...
     # make the call
     try:
@@ -193,6 +198,16 @@ def resize_vm(entity, mixin, context):
     entity.mixins.append(mixin)
 
 
+def get_vnc_for_vm(instance, context):
+    try:
+        console = compute_api.get_vnc_console(context, instance, 'novnc')
+    except Exception:
+        msg = 'Console info is not available yet.'
+        # TODO: logging!
+        return
+    return console
+
+
 def rebuild_vm(entity, mixin, context):
     """
     Rebuilds the specified VM with the supplied OsTemplate mixin.
@@ -200,7 +215,7 @@ def rebuild_vm(entity, mixin, context):
     # TODO(dizz): Use the admin_password extension?
     instance = get_vm_instance(entity.attributes['occi.core.id'], context)
     image_href = mixin.os_id
-    admin_password = compute.utils.generate_password(FLAGS.password_length)
+    admin_password = compute_utils.generate_password(FLAGS.password_length)
     kwargs = {}
     try:
         compute_api.rebuild(context, instance, image_href, admin_password,
@@ -219,7 +234,7 @@ def rebuild_vm(entity, mixin, context):
     entity.mixins.append(mixin)
 
 
-def start_vm(self, entity, context):
+def start_vm(entity, context):
     """
     Starts a vm that is in the stopped state. Note, currently we do not
     use the nova start and stop, rather the resume/suspend methods. The
@@ -252,7 +267,7 @@ def stop_vm(entity, attributes, context):
     instance = get_vm_instance(entity.attributes['occi.core.id'], context)
 
     if 'method' in attributes:
-        msg = 'OS only allows one type of stop. What is specified in the ' \
+        msg = 'OS only allows one type of stop. What is specified in the '\
               'request will be ignored.'
         # TODO(tmetsch): log...
     try:
@@ -297,15 +312,103 @@ def restart_vm(entity, attributes, context):
     entity.actions = []
 
 
-def suspend_vm(self, entity, attributes, context):
+def set_password_for_vm(instance, password, context):
+    """
+    Set new password for an VM.
+    """
+    compute_api.set_admin_password(context, instance, password)
+
+
+def revert_resize_vm(instance, context):
+    try:
+        compute_api.revert_resize(context, instance)
+    except exception.MigrationNotFound:
+        msg = 'Instance has not been resized.'
+        raise AttributeError(msg)
+    except exception.InstanceInvalidState:
+        raise AttributeError()
+    except Exception:
+        msg = 'Error in revert-resize.'
+        raise AttributeError(msg)
+
+
+def confirm_resize_vm(instance, context):
+    try:
+        compute_api.confirm_resize(context, instance)
+    except exception.MigrationNotFound:
+        msg = "Instance has not been resized."
+        raise exc.HTTPBadRequest(explanation=msg)
+    except exception.InstanceInvalidState:
+        exc.HTTPConflict()
+    except Exception:
+        msg = 'Error in confirm-resize.'
+        raise exc.HTTPBadRequest()
+
+
+def snapshot_vm(instance, image_name, props, context):
+    try:
+        compute_api.snapshot(context,
+                             instance,
+                             image_name,
+                             extra_properties=props)
+
+    except exception.InstanceInvalidState:
+        exc.HTTPConflict()
+
+
+def add_flaoting_ip_to_vm(instance, attributes, context):
+    cached_nwinfo = compute_utils.get_nw_info_for_instance\
+        (instance)
+    if not cached_nwinfo:
+        msg = 'No nw_info cache associated with instance'
+        raise AttributeError(msg)
+
+    fixed_ips = cached_nwinfo.fixed_ips()
+    if not fixed_ips:
+        msg = 'No fixed ips associated to instance'
+        raise AttributeError(msg)
+
+    if 'org.openstack.network.floating.pool' not in attributes:
+        pool = None
+    else:
+        pool = attributes['org.openstack.network.floating.pool']
+
+    address = network_api.allocate_floating_ip(context, pool)
+
+    if len(fixed_ips) > 1:
+        msg = 'multiple fixed_ips exist, using the first: %s'
+        # TODO: add logging.
+
+    try:
+        network_api.associate_floating_ip(context, instance,
+                                          floating_address=address,
+                                          fixed_address=fixed_ips[0]['address'])
+    except exception.FloatingIpAssociated:
+        msg = 'floating ip is already associated'
+        raise AttributeError(msg)
+    except exception.NoFloatingIpInterface:
+        msg = 'l3driver call to add floating ip failed'
+        raise AttributeError(msg)
+    except Exception:
+        msg = 'Error. Unable to associate floating ip'
+        raise AttributeError(msg)
+    return address
+
+
+def remove_floating_ip_from_vm(instance, address, context):
+    network_api.disassociate_floating_ip(context, instance, address)
+    network_api.release_floating_ip(context, address)
+
+
+def suspend_vm(entity, attributes, context):
     """
     Suspends a VM. Use the start action to unsuspend a VM.
     """
     instance = get_vm_instance(entity.attributes['occi.core.id'], context)
 
     if 'method' in attributes:
-        msg = _('OS only allows one type of suspend. '
-                'What is specified in the request will be ignored.')
+        msg = 'OS only allows one type of suspend. What is specified in the' \
+              ' request will be ignored.'
         # TODO(tmetsch): log...
     try:
         compute_api.pause(context, instance)
@@ -378,9 +481,9 @@ def set_vm_occistate(entity, context):
         else:
             entity.actions = []
 
-        # rebuild server - OS
-        # resize server confirm rebuild
-        # revert resized server - OS (indirectly OCCI)
+            # rebuild server - OS
+            # resize server confirm rebuild
+            # revert resized server - OS (indirectly OCCI)
     elif instance['vm_state'] in (
         vm_states.RESIZED,
         vm_states.BUILDING,
@@ -392,6 +495,24 @@ def set_vm_occistate(entity, context):
         task_states.RESIZE_REVERTING):
         entity.attributes['occi.compute.state'] = 'inactive'
         entity.actions = []
+
+
+def attach_volume(inst_to_attach, vol_to_attach, uid, context):
+    """
+    Attaches a storage volume.
+    """
+    compute_api.attach_volume(
+        context,
+        inst_to_attach,
+        vol_to_attach,
+        uid)
+
+
+def detach_volume(uid, context):
+    """
+    Setach a storage volume.
+    """
+    compute_api.detach_volumne(context, uid)
 
 # NETWORK
 
@@ -433,9 +554,75 @@ def get_adapter_info(instance, context):
 # STORAGE
 
 
+def create_storage(entity, context):
+    """
+    Create a storage instance.
+    """
+    size = float(entity.attributes['occi.storage.size'])
+
+    # TODO(dizz): A blueprint?
+    # OpenStack deals with size in terms of integer.
+    # Need to convert float to integer for now and only if the float
+    # can be losslessly converted to integer
+    # e.g. See nova/quota.py:allowed_volumes(...)
+    if not size.is_integer:
+        msg = 'Volume sizes cannot be specified as fractional floats.'
+        raise exc.HTTPBadRequest(msg)
+
+    size = str(int(size))
+
+    disp_name = ''
+    try:
+        disp_name = entity.attributes['occi.core.title']
+    except KeyError:
+        #Generate more suitable name as it's used for hostname
+        #where no hostname is supplied.
+        disp_name = entity.attributes['occi.core.title'] = str(random
+        .randrange(0, 99999999)) + '-storage.occi-wg.org'
+    if 'occi.core.summary' in entity.attributes:
+        disp_descr = entity.attributes['occi.core.summary']
+    else:
+        disp_descr = disp_name
+
+    snapshot = None
+    # volume_type can be specified by mixin
+    volume_type = None
+    metadata = None
+    avail_zone = None
+    new_volume = volume_api.create(context,
+                                   size,
+                                   disp_name,
+                                   disp_descr,
+                                   snapshot=snapshot,
+                                   volume_type=volume_type,
+                                   metadata=metadata,
+                                   availability_zone=avail_zone)
+    return new_volume
+
+
 def get_storage_instance(uid, context):
-    instance = volume_api.get(context, uid)
+    """
+    Retrieve a storage instance.
+    """
+    try:
+        instance = volume_api.get(context, uid)
+    except exception.NotFound:
+        raise exc.HTTPNotFound()
     return instance
+
+
+def delete_storage_instance(instance, context):
+    """
+    Delete a storage instance.
+    """
+    volume_api.delete(context, instance)
+
+
+def snapshot_storage_instance(volume, name, description, context):
+    """
+    Snapshots an storage instance.
+    """
+    volume_api.create_snapshot(context, volume, name, description)
 
 
 def get_image_architecture(instance, context):
@@ -462,19 +649,72 @@ def get_image_architecture(instance, context):
     return arch
 
 
-def attach_volume(inst_to_attach, vol_to_attach, uid, context):
-    """
-    Attaches a storage volume.
-    """
-    compute_api.attach_volume(
-                    context,
-                    inst_to_attach,
-                    vol_to_attach,
-                    uid)
+# Security groups
 
 
-def detach_volume(uid, context):
+def create_security_group(group_name, description, context):
+    if db.security_group_exists(context, context.project_id, group_name):
+        raise AttributeError('Security group %s already exists.')
+
+    group = {'user_id': context.user_id,
+             'project_id': context.project_id,
+             'name': group_name,
+             'description': description}
+    db.security_group_create(context, group)
+    sec_handler.trigger_security_group_create_refresh(context, group)
+
+
+def remove_security_group(security_group, context):
+    if db.security_group_in_use(context, security_group['id']):
+        raise exc.HTTPBadRequest(
+            explanation='Security group is still in use')
+
+    db.security_group_destroy(context, security_group['id'])
+    sec_handler.trigger_security_group_destroy_refresh(
+        context, security_group['id'])
+
+
+def retrieve_sec_group(sec_mixin, extras):
     """
-    Setach a storage volume.
+    Retrieve the security group associated with the security mixin.
     """
-    compute_api.detach_volumne(context, uid)
+    try:
+        sec_group = db.security_group_get_by_name(extras['nova_ctx'],
+                                                  extras['nova_ctx'].project_id,
+                                                  sec_mixin.term)
+    except Exception:
+        # ensure that an OpenStack sec group matches the mixin
+        # if not, create one.
+        # This has to be done as pyssf has no way to associate
+        # a handler for the creation of mixins at the query interface
+        msg = 'Security group does not exist.'
+        raise AttributeError(msg)
+
+    return sec_group
+
+
+def create_security_rule(rule, context):
+    db.security_group_rule_create(context, rule)
+
+
+def remove_security_rule(rule, extras):
+    group_id = rule['parent_group_id']
+    # TODO(dizz): method seems to be gone!
+    # self.compute_api.ensure_default_security_group(extras['nova_ctx'])
+    security_group = db.security_group_get(extras['nova_ctx'], group_id)
+
+    db.security_group_rule_destroy(extras['nova_ctx'], rule['id'])
+    sec_handler.trigger_security_group_rule_destroy_refresh(
+        extras['nova_ctx'], [rule['id']])
+    compute_api.trigger_security_group_rules_refresh(
+        extras['nova_ctx'],
+        security_group['id'])
+
+
+def retrieve_security_rule(entity, extras):
+    try:
+        rule = db.security_group_rule_get(extras['nova_ctx'],
+                                          int(entity.attributes['occi.core.id']))
+    except Exception:
+        raise exc.HTTPNotFound()
+    return rule

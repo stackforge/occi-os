@@ -55,9 +55,9 @@ class StorageLinkBackend(backend.KindBackend):
         Unlinks the the compute from the storage resource.
         """
         try:
-            vol_to_detach = sget_vol_to_attach(extras['nova_ctx'], link)
+            vol_to_detach = get_vol_to_attach(extras['nova_ctx'], link)
             nova_glue.detach_volume(vol_to_detach['id'], extras['nova_ctx'])
-        except Exception, e:
+        except Exception:
             msg = 'Error in detaching storage volume.'
             raise AttributeError(msg)
 

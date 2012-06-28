@@ -17,21 +17,12 @@
 
 from occi import backend
 from occi import core_model
-from webob import exc
-
-from nova import compute
-from nova import exception
-from nova import logging
-from nova.network import api as net_api
-
-from nova.compute import utils as compute_utils
-
-# Hi I'm a logger, use me! :-)
-LOG = logging.getLogger('nova.api.occi.backends.compute.os')
-
 
 ######################## OpenStack Specific Addtitions #######################
 ######### 1. define the method to retreive all extension information #########
+from api import nova_glue
+
+
 def get_extensions():
 
     return  [
@@ -127,10 +118,6 @@ OS_FLOATING_IP_EXT = core_model.Mixin(
 ##################### 3. define the extension handler(s) #####################
 class OsComputeActionBackend(backend.ActionBackend):
 
-    def __init__(self):
-        super(OsComputeActionBackend, self).__init__()
-        self.compute_api = compute.API()
-        self.network_api = net_api.API()
 
     def action(self, entity, action, attributes, extras):
         """
@@ -138,11 +125,9 @@ class OsComputeActionBackend(backend.ActionBackend):
         """
         context = extras['nova_ctx']
 
-        try:
-            instance = self.compute_api.get(context,
-                                            entity.attributes['occi.core.id'])
-        except exception.NotFound:
-            raise exc.HTTPNotFound()
+        instance = nova_glue.get_vm_instance(entity.attributes['occi.core' \
+                                                                    '.id'],
+                                             context)
 
         if action == OS_CHG_PWD:
             self._os_chg_passwd_vm(entity, attributes, instance, context)
@@ -158,24 +143,20 @@ class OsComputeActionBackend(backend.ActionBackend):
         elif action == OS_DEALLOC_FLOATING_IP:
             self._os_deallocate_floating_ip(entity, instance, context)
         else:
-            raise exc.HTTPBadRequest()
+            raise AttributeError('Not applicable action.')
 
     def _os_chg_passwd_vm(self, entity, attributes, instance, context):
         """
         Implements changing of a vm's admin password
         """
         # Use the password extension?
-        msg = _('Changing admin password of virtual machine with id %s') % \
-                                                            entity.identifier
-        LOG.info(msg)
         if 'org.openstack.credentials.admin_pwd' not in attributes:
-            msg = _("'org.openstack.credentials.admin_pwd' "
-                                        "was not supplied in the request.")
-            LOG.error(msg)
-            exc.HTTPBadRequest()
+            msg = 'org.openstack.credentials.admin_pwd was not supplied in ' \
+                  'the request.'
+            raise AttributeError(msg)
 
         new_password = attributes['org.openstack.credentials.admin_pwd']
-        self.compute_api.set_admin_password(context, instance, new_password)
+        nova_glue.set_password_for_vm(instance, new_password, context)
 
         # No need to update attributes - state remains the same.
 
@@ -183,63 +164,28 @@ class OsComputeActionBackend(backend.ActionBackend):
         """
         Implements reverting of a resized vm
         """
-        msg = _('Reverting resized virtual machine with id %s') % \
-                                                            entity.identifier
-        LOG.info(msg)
-        try:
-            self.compute_api.revert_resize(context, instance)
-        except exception.MigrationNotFound:
-            msg = _("Instance has not been resized.")
-            raise exc.HTTPBadRequest(explanation=msg)
-        except exception.InstanceInvalidState:
-            exc.HTTPConflict()
-        except Exception:
-            msg = _('Error in revert-resize.')
-            LOG.error(msg)
-            raise exc.HTTPBadRequest()
+        nova_glue.revert_resize_vm(instance, context)
         entity.attributes['occi.compute.state'] = 'inactive'
 
     def _os_confirm_resize_vm(self, entity, instance, context):
         """
         Implements the confirmation of a resized vm.
         """
-        msg = _('Confirming resize of virtual machine with id %s') % \
-                                                            entity.identifier
-        LOG.info(msg)
-        try:
-            self.compute_api.confirm_resize(context, instance)
-        except exception.MigrationNotFound:
-            msg = _("Instance has not been resized.")
-            raise exc.HTTPBadRequest(explanation=msg)
-        except exception.InstanceInvalidState:
-            exc.HTTPConflict()
-        except Exception:
-            msg = _('Error in confirm-resize.')
-            LOG.error(msg)
-            raise exc.HTTPBadRequest()
+        nova_glue.confirm_resize_vm(instance, context)
+
         entity.attributes['occi.compute.state'] = 'active'
 
     def _os_create_image(self, entity, attributes, instance, context):
         """
         implements the creation of an image of the specified vm
         """
-        msg = _('Creating image from virtual machine with id %s') % \
-                                                            entity.identifier
-        LOG.info(msg)
         if 'org.openstack.snapshot.image_name' not in attributes:
-            exc.HTTPBadRequest()
+            raise AttributeError('Missing image name')
 
         image_name = attributes['org.openstack.snapshot.image_name']
         props = {}
 
-        try:
-            self.compute_api.snapshot(context,
-                                      instance,
-                                      image_name,
-                                      extra_properties=props)
-
-        except exception.InstanceInvalidState:
-            exc.HTTPConflict()
+        nova_glue.snapshot_vm(instance, image_name, props, context)
 
     def _os_allocate_floating_ip(self, entity, attributes, instance, context):
         """
@@ -252,47 +198,11 @@ class OsComputeActionBackend(backend.ActionBackend):
                                                     OS_FLOATING_IP_EXT.term:
                 #TODO(dizz): implement support for multiple floating ips
                 #            needs support in pyssf for URI in link
-                msg = _('There is already a floating IP assigned to the VM')
-                LOG.error(msg)
-                exc.HTTPBadRequest(explanation=msg)
+                msg = 'There is already a floating IP assigned to the VM'
+                raise AttributeError(msg)
 
-        cached_nwinfo = compute_utils.get_nw_info_for_instance\
-            (instance)
-        if not cached_nwinfo:
-            msg = _('No nw_info cache associated with instance')
-            raise webob.exc.HTTPBadRequest(explanation=msg)
-
-        fixed_ips = cached_nwinfo.fixed_ips()
-        if not fixed_ips:
-            msg = _('No fixed ips associated to instance')
-            raise webob.exc.HTTPBadRequest(explanation=msg)
-
-        if 'org.openstack.network.floating.pool' not in attributes:
-            pool = None
-        else:
-            pool = attributes['org.openstack.network.floating.pool']
-
-        address = self.network_api.allocate_floating_ip(context, pool)
-
-        if len(fixed_ips) > 1:
-            msg = _('multiple fixed_ips exist, using the first: %s')
-            LOG.warning(msg, fixed_ips[0]['address'])
-
-        try:
-            self.network_api.associate_floating_ip(context, instance,
-                                                   floating_address=address,
-                                                   fixed_address=fixed_ips[0]['address'])
-        except exception.FloatingIpAssociated:
-            msg = _('floating ip is already associated')
-            raise webob.exc.HTTPBadRequest(explanation=msg)
-        except exception.NoFloatingIpInterface:
-            msg = _('l3driver call to add floating ip failed')
-            raise webob.exc.HTTPBadRequest(explanation=msg)
-        except Exception:
-            msg = _('Error. Unable to associate floating ip')
-            LOG.exception(msg)
-            raise webob.exc.HTTPBadRequest(explanation=msg)
-
+        address = nova_glue.add_flaoting_ip_to_vm(instance, attributes,
+                                                  context)
 
         # once the address is allocated we need to reflect that fact
         # on the resource holding it.
@@ -305,8 +215,7 @@ class OsComputeActionBackend(backend.ActionBackend):
         This returns the deallocated IP address to the pool.
         """
         address = entity.attributes['org.openstack.network.floating.ip']
-        self.network_api.disassociate_floating_ip(context, instance, address)
-        self.network_api.release_floating_ip(context, address)
+        nova_glue.remove_floating_ip_from_vm(instance, address, context)
 
         # remove the mixin
         for mixin in entity.mixins:

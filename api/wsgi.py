@@ -182,8 +182,6 @@ class OCCIApplication(occi_wsgi.Application, wsgi.Application):
         #TODO(dizz): verify behaviour with quantum backend
         #      i.e. cover the case where there are > 1 networks
         name = 'DEFAULT_NETWORK'
-        msg = _('Registering default network with web app.')
-        LOG.info(msg)
         show_default_net_config = FLAGS.get("show_default_net_config", False)
 
         net_attrs = {
@@ -219,7 +217,7 @@ class OCCIApplication(occi_wsgi.Application, wsgi.Application):
         networks = network_api.get_all(ctx)
 
         if len(networks) > 1:
-            msg = _('There is more that one network.'
+            msg = ('There is more that one network.'
                     'Using the first network: %s') % networks[0]['id']
             LOG.warn(msg)
 
@@ -248,7 +246,7 @@ class OCCIApplication(occi_wsgi.Application, wsgi.Application):
             # and we're not to filter them out then register it.
             if (((img['container_format'] or img['disk_format'])
                     in ('ari', 'aki')) and filter_kernel_and_ram_images):
-                msg = _('Not registering kernel/RAM image.')
+                msg = 'Not registering kernel/RAM image.'
                 LOG.warn(msg)
                 continue
 
@@ -262,7 +260,7 @@ class OCCIApplication(occi_wsgi.Application, wsgi.Application):
                                                             ' VM image',
                                 location='/' + img['name'] + '/')
 
-            msg = _('Registering an OS image type as: %s') % str(os_template)
+            msg = ('Registering an OS image type as: %s') % str(os_template)
             LOG.debug(msg)
 
             try:
@@ -285,7 +283,7 @@ class OCCIApplication(occi_wsgi.Application, wsgi.Application):
                 attributes=self._get_resource_attributes(os_flavours[itype]),
                 title='This is an openstack ' + itype + ' flavor.',
                 location='/' + itype + '/')
-            msg = _('Registering an OpenStack flavour/instance type: %s') % \
+            msg = ('Registering an OpenStack flavour/instance type: %s') % \
                                                         str(resource_template)
             LOG.debug(msg)
 

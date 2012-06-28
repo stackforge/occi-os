@@ -16,28 +16,17 @@
 #    under the License.
 
 import random
-from nova.openstack.common import importutils
 
 from occi import backend
 from occi import core_model
-from webob import exc
-
-from nova import compute
-from nova import db
-from nova import flags
-from nova import log as logging
 
 
 # TODO(dizz): Remove SSH Console and VNC Console once URI support is added to
 #             pyssf
 
-#Hi I'm a logger, use me! :-)
-LOG = logging.getLogger('nova.api.occi.backends.securityrule')
-
-FLAGS = flags.FLAGS
-
-
 ####################### OCCI Candidate Spec Additions ########################
+from api import nova_glue
+
 def get_extensions():
     return [
             {
@@ -121,11 +110,6 @@ class UserSecurityGroupMixin(core_model.Mixin):
 # The same approach can be used to create and delete VM images.
 class SecurityGroupBackend(backend.UserDefinedMixinBackend):
 
-    def __init__(self):
-        super(SecurityGroupBackend, self).__init__()
-        self.compute_api = compute.API()
-        self.sgh = importutils.import_object(FLAGS.security_group_handler)
-
     def init_sec_group(self, category, extras):
         """
         Creates the security group as specified in the request.
@@ -141,18 +125,7 @@ class SecurityGroupBackend(backend.UserDefinedMixinBackend):
         group_description = (category.title.strip()
                                             if category.title else group_name)
 
-        # TODO(dizz): method seems to be gone!
-        #self.compute_api.ensure_default_security_group(context)
-        if db.security_group_exists(context, context.project_id, group_name):
-            raise exc.HTTPBadRequest(
-                explanation=_('Security group %s already exists') % group_name)
-
-        group = {'user_id': context.user_id,
-                 'project_id': context.project_id,
-                 'name': group_name,
-                 'description': group_description}
-        db.security_group_create(context, group)
-        self.sgh.trigger_security_group_create_refresh(context, group)
+        nova_glue.create_security_group(group_name, group_description, context)
 
     def destroy(self, category, extras):
         """
@@ -160,35 +133,16 @@ class SecurityGroupBackend(backend.UserDefinedMixinBackend):
         """
         context = extras['nova_ctx']
         security_group = self._get_sec_group(extras, category)
-        if db.security_group_in_use(context, security_group['id']):
-            raise exc.HTTPBadRequest(
-                            explanation=_("Security group is still in use"))
-
-        db.security_group_destroy(context, security_group['id'])
-        self.sgh.trigger_security_group_destroy_refresh(
-            context, security_group['id'])
+        nova_glue.remove_security_group(security_group, context)
 
     def _get_sec_group(self, extras, sec_mixin):
         """
         Retreive the security group by name associated with the security mixin.
         """
-        try:
-            sec_group = db.security_group_get_by_name(extras['nova_ctx'],
-                                 extras['nova_ctx'].project_id, sec_mixin.term)
-        except Exception:
-            msg = _('Security group does not exist.')
-            LOG.error(msg)
-            raise exc.HTTPBadRequest()
-
-        return sec_group
+        return nova_glue.retrieve_sec_group(sec_mixin, extras)
 
 
 class SecurityRuleBackend(backend.KindBackend):
-
-    def __init__(self):
-        super(SecurityRuleBackend, self).__init__()
-        self.compute_api = compute.API()
-        self.sgh = importutils.import_object(FLAGS.security_group_handler)
 
     def create(self, entity, extras):
         """
@@ -196,21 +150,17 @@ class SecurityRuleBackend(backend.KindBackend):
         The group to add the rule to must exist.
         In OCCI-speak this means the mixin must be supplied with the request
         """
-        msg = _('Creating a network security rule')
-        LOG.info(msg)
-
         sec_mixin = self._get_sec_mixin(entity)
-        security_group = self._get_sec_group(extras, sec_mixin)
+        security_group = nova_glue.retrieve_sec_group(sec_mixin, extras)
         sg_rule = self._make_sec_rule(entity, security_group['id'])
 
         if self._security_group_rule_exists(security_group, sg_rule):
             #This rule already exists in group
-            msg = _('This rule already exists in group. %s') % \
+            msg = ('This rule already exists in group. %s') % \
                                                         str(security_group)
-            LOG.error(msg)
-            raise exc.HTTPBadRequest()
+            raise AttributeError(msg)
 
-        db.security_group_rule_create(extras['nova_ctx'], sg_rule)
+        nova_glue.create_security_rule(sg_rule, extras['nova_ctx'])
 
     def _make_sec_rule(self, entity, sec_grp_id):
         """
@@ -224,21 +174,21 @@ class SecurityRuleBackend(backend.KindBackend):
         if prot in ('tcp', 'udp', 'icmp'):
             sg_rule['protocol'] = prot
         else:
-            raise exc.HTTPBadRequest()
+            raise AttributeError('Invalid protocol defined.')
         from_p = entity.attributes['occi.network.security.to'].strip()
         from_p = int(from_p)
         if (type(from_p) is int) and 0 < from_p <= 65535:
             sg_rule['from_port'] = from_p
         else:
-            raise exc.HTTPBadRequest()
+            raise AttributeError('No valid from port defined.')
         to_p = entity.attributes['occi.network.security.to'].strip()
         to_p = int(to_p)
         if (type(to_p) is int) and 0 < to_p <= 65535:
             sg_rule['to_port'] = to_p
         else:
-            raise exc.HTTPBadRequest()
+            raise AttributeError('No valid to port defined.')
         if from_p > to_p:
-            raise exc.HTTPBadRequest()
+            raise AttributeError('From port is bigger than to port defined.')
         cidr = entity.attributes['occi.network.security.range'].strip()
         if len(cidr) <= 0:
             cidr = '0.0.0.0/0'
@@ -247,27 +197,9 @@ class SecurityRuleBackend(backend.KindBackend):
         if True:
             sg_rule['cidr'] = cidr
         else:
-            raise exc.HTTPBadRequest()
+            raise AttributeError('No valid CIDR defined.')
         sg_rule['group'] = {}
         return sg_rule
-
-    def _get_sec_group(self, extras, sec_mixin):
-        """
-        Retreive the security group associated with the security mixin.
-        """
-        try:
-            sec_group = db.security_group_get_by_name(extras['nova_ctx'],
-                                 extras['nova_ctx'].project_id, sec_mixin.term)
-        except Exception:
-            # ensure that an OpenStack sec group matches the mixin
-            # if not, create one.
-            # This has to be done as pyssf has no way to associate
-            # a handler for the creation of mixins at the query interface
-            msg = _('Security group does not exist.')
-            LOG.error(msg)
-            raise exc.HTTPBadRequest()
-
-        return sec_group
 
     def _get_sec_mixin(self, entity):
         """
@@ -282,13 +214,11 @@ class SecurityRuleBackend(backend.KindBackend):
 
         if not sec_mixin_present:
             # no mixin of the type security group was found
-            msg = _('No security group mixin was found')
-            LOG.error(msg)
-            raise exc.HTTPBadRequest()
+            msg = 'No security group mixin was found'
+            raise AttributeError(msg)
         if sec_mixin_present > 1:
-            msg = _('More than one security group mixin was found')
-            LOG.error(msg)
-            raise exc.HTTPBadRequest()
+            msg = 'More than one security group mixin was found'
+            raise AttributeError(msg)
 
         return sec_mixin
 
@@ -314,24 +244,6 @@ class SecurityRuleBackend(backend.KindBackend):
         """
         Deletes the security rule.
         """
-        msg = _('Deleting a network security rule')
-        LOG.info(msg)
-        # TODO(dizz): method seems to be gone!
-        # self.compute_api.ensure_default_security_group(extras['nova_ctx'])
-        try:
-            rule = db.security_group_rule_get(extras['nova_ctx'],
-                                        int(entity.attributes['occi.core.id']))
-        except Exception:
-            raise exc.HTTPNotFound()
+        rule = nova_glue.retrieve_security_rule(entity, extras)
 
-        group_id = rule['parent_group_id']
-        # TODO(dizz): method seems to be gone!
-        # self.compute_api.ensure_default_security_group(extras['nova_ctx'])
-        security_group = db.security_group_get(extras['nova_ctx'], group_id)
-
-        db.security_group_rule_destroy(extras['nova_ctx'], rule['id'])
-        self.sgh.trigger_security_group_rule_destroy_refresh(
-                                            extras['nova_ctx'], [rule['id']])
-        self.compute_api.trigger_security_group_rules_refresh(
-                                                        extras['nova_ctx'],
-                                                        security_group['id'])
+        nova_glue.remove_security_rule(rule, extras)
