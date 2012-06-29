@@ -15,6 +15,12 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+"""
+VM related 'glue' :-)
+"""
+
+#pylint: disable=R0914,W0142,R0912,R0915
+
 from api.compute import templates
 from api.extensions import occi_future
 from api.extensions import openstack
@@ -36,7 +42,7 @@ import logging
 
 # Connection to the nova APIs
 
-compute_api = compute.API()
+COMPUTE_API = compute.API()
 
 LOG = logging.getLogger()
 
@@ -69,16 +75,16 @@ def create_vm(entity, context):
     auto_disk_config = None
     scheduler_hints = None
 
-    rc = oc = 0
+    r_count = o_count = 0
     resource_template = None
     os_template = None
     for mixin in entity.mixins:
         if isinstance(mixin, templates.ResourceTemplate):
             resource_template = mixin
-            rc += 1
+            r_count += 1
         elif isinstance(mixin, templates.OsTemplate):
             os_template = mixin
-            oc += 1
+            o_count += 1
         elif mixin == openstack.OS_KEY_PAIR_EXT:
             attr = 'org.openstack.credentials.publickey.name'
             key_name = entity.attributes[attr]
@@ -115,7 +121,7 @@ def create_vm(entity, context):
         LOG.warn(msg)
     # make the call
     try:
-        (instances, _reservation_id) = compute_api.create(
+        (instances, _reservation_id) = COMPUTE_API.create(
             context=context,
             instance_type=inst_type,
             image_href=image_id,
@@ -155,12 +161,12 @@ def rebuild_vm(uid, image_href, context):
     image_href -- image reference.
     context -- the os context
     """
-    instance = _get_vm(uid, context)
+    instance = get_vm(uid, context)
 
     admin_password = utils.generate_password(FLAGS.password_length)
     kwargs = {}
     try:
-        compute_api.rebuild(context, instance, image_href, admin_password,
+        COMPUTE_API.rebuild(context, instance, image_href, admin_password,
                             **kwargs)
     except exception.InstanceInvalidState:
         raise exceptions.HTTPError(409, 'VM is in an invalid state.')
@@ -179,11 +185,11 @@ def resize_vm(uid, flavor_name, context):
     flavor_name -- image reference.
     context -- the os context
     """
-    instance = _get_vm(uid, context)
+    instance = get_vm(uid, context)
     kwargs = {}
     try:
         flavor = instance_types.get_instance_type_by_name(flavor_name)
-        compute_api.resize(context, instance, flavor_id=flavor['flavorid'],
+        COMPUTE_API.resize(context, instance, flavor_id=flavor['flavorid'],
                            **kwargs)
     except exception.FlavorNotFound:
         raise AttributeError('Unable to locate requested flavor.')
@@ -200,12 +206,12 @@ def delete_vm(uid, context):
     uid -- id of the instance
     context -- the os context
     """
-    instance = _get_vm(uid, context)
+    instance = get_vm(uid, context)
 
     if FLAGS.reclaim_instance_interval:
-        compute_api.soft_delete(context, instance)
+        COMPUTE_API.soft_delete(context, instance)
     else:
-        compute_api.delete(context, instance)
+        COMPUTE_API.delete(context, instance)
 
 
 def suspend_vm(uid, context):
@@ -215,10 +221,10 @@ def suspend_vm(uid, context):
     uid -- id of the instance
     context -- the os context
     """
-    instance = _get_vm(uid, context)
+    instance = get_vm(uid, context)
 
     try:
-        compute_api.pause(context, instance)
+        COMPUTE_API.pause(context, instance)
     except Exception as error:
         raise exceptions.HTTPError(500, str(error))
 
@@ -231,9 +237,9 @@ def snapshot_vm(uid, image_name, context):
     image_name -- name of the new image
     context -- the os context
     """
-    instance = _get_vm(uid, context)
+    instance = get_vm(uid, context)
     try:
-        compute_api.snapshot(context,
+        COMPUTE_API.snapshot(context,
                              instance,
                              image_name)
 
@@ -251,13 +257,13 @@ def start_vm(uid, state, context):
     state -- the state the VM is in (str)
     context -- the os context
     """
-    instance = _get_vm(uid, context)
+    instance = get_vm(uid, context)
 
     try:
         if state == 'suspended':
-            compute_api.unpause(context, instance)
+            COMPUTE_API.unpause(context, instance)
         else:
-            compute_api.resume(context, instance)
+            COMPUTE_API.resume(context, instance)
     except Exception as error:
         raise exceptions.HTTPError(500, 'Error while starting VM: ' + str
             (error))
@@ -272,13 +278,13 @@ def stop_vm(uid, context):
     uid -- id of the instance
     context -- the os context
     """
-    instance = _get_vm(uid, context)
+    instance = get_vm(uid, context)
 
     try:
         # TODO(dizz): There are issues with the stop and start methods of
         #             OS. For now we'll use suspend.
         # self.compute_api.stop(context, instance)
-        compute_api.suspend(context, instance)
+        COMPUTE_API.suspend(context, instance)
     except Exception as error:
         raise exceptions.HTTPError(500, 'Error while stopping VM: ' + str
             (error))
@@ -297,7 +303,7 @@ def restart_vm(uid, method, context):
     method -- how the machine should be restarted.
     context -- the os context
     """
-    instance = _get_vm(uid, context)
+    instance = get_vm(uid, context)
 
     if method in ('graceful', 'warm'):
         reboot_type = 'SOFT'
@@ -306,11 +312,11 @@ def restart_vm(uid, method, context):
     else:
         raise AttributeError('Unknown method.')
     try:
-        compute_api.reboot(context, instance, reboot_type)
+        COMPUTE_API.reboot(context, instance, reboot_type)
     except exception.InstanceInvalidState:
         raise exceptions.HTTPError(409, 'VM is in an invalid state.')
-    except Exception as e:
-        msg = ("Error in reboot %s") % e
+    except Exception as error:
+        msg = ("Error in reboot %s") % error
         raise exceptions.HTTPError(500, msg)
 
 
@@ -324,10 +330,10 @@ def attach_volume(instance_id, volume_id, mount_point, context):
     context -- The os security context.
     """
     # TODO: check exception handling!
-    instance = _get_vm(instance_id, context)
+    instance = get_vm(instance_id, context)
     volume_id = vol.get_storage(volume_id, context)[0]
 
-    compute_api.attach_volume(
+    COMPUTE_API.attach_volume(
         context,
         instance,
         volume_id,
@@ -343,7 +349,7 @@ def detach_volume(volume_id, context):
     """
     volume_id = vol._get_volume(volume_id, context)[0]
 
-    compute_api.detach_volumne(context, volume_id)
+    COMPUTE_API.detach_volumne(context, volume_id)
 
 
 def set_password_for_vm(uid, password, context):
@@ -355,9 +361,9 @@ def set_password_for_vm(uid, password, context):
     context -- The os context.
     """
     # TODO: check exception handling!
-    instance = _get_vm(uid, context)
+    instance = get_vm(uid, context)
 
-    compute_api.set_admin_password(context, instance, password)
+    COMPUTE_API.set_admin_password(context, instance, password)
 
 
 def get_vnc(uid, context):
@@ -367,11 +373,11 @@ def get_vnc(uid, context):
     uid -- id of the instance
     context -- the os context
     """
-    instance = _get_vm(uid, context)
+    instance = get_vm(uid, context)
     try:
-        console = compute_api.get_vnc_console(context, instance, 'novnc')
-    except Exception:
-        LOG.warn('Console info is not available yet.')
+        console = COMPUTE_API.get_vnc_console(context, instance, 'novnc')
+    except Exception as error:
+        LOG.warn('Console info is not available yet: ' + str(error))
         return None
     return console
 
@@ -383,9 +389,9 @@ def revert_resize_vm(uid, context):
     uid -- id of the instance
     context -- the os context
     """
-    instance = _get_vm(uid, context)
+    instance = get_vm(uid, context)
     try:
-        compute_api.revert_resize(context, instance)
+        COMPUTE_API.revert_resize(context, instance)
     except exception.MigrationNotFound:
         raise AttributeError('Instance has not been resized.')
     except exception.InstanceInvalidState:
@@ -401,9 +407,9 @@ def confirm_resize_vm(uid, context):
     uid -- id of the instance
     context -- the os context
     """
-    instance = _get_vm(uid, context)
+    instance = get_vm(uid, context)
     try:
-        compute_api.confirm_resize(context, instance)
+        COMPUTE_API.confirm_resize(context, instance)
     except exception.MigrationNotFound:
         raise AttributeError('Instance has not been resized.')
     except exception.InstanceInvalidState:
@@ -412,7 +418,7 @@ def confirm_resize_vm(uid, context):
         raise AttributeError('Error in confirm-resize.')
 
 
-def _get_vm(uid, context):
+def get_vm(uid, context):
     """
     Retrieve an VM instance from nova.
 
@@ -420,7 +426,7 @@ def _get_vm(uid, context):
     context -- the os context
     """
     try:
-        instance = compute_api.get(context, uid)
+        instance = COMPUTE_API.get(context, uid)
     except exception.NotFound:
         raise exceptions.HTTPError(404, 'VM not found!')
     return instance
@@ -439,7 +445,7 @@ def get_occi_state(uid, context):
     uid -- Id of the VM.
     context -- the os context.
     """
-    instance = _get_vm(uid, context)
+    instance = get_vm(uid, context)
 
     if instance['vm_state'] in (vm_states.ACTIVE,
                                 task_states.UPDATING_PASSWORD,

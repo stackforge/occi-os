@@ -7,7 +7,7 @@ mkdir build/html
 echo '\n PyLint report \n****************************************\n'
 
 #pylint -d I0011 -i y -f html api tests >> build/html/lint.html
-pylint -d I0011 -i y * --report no
+pylint -d I0011,E1101,E0611,F0401 -i y --report no *
 
 echo '\n Unittest coverage \n****************************************\n'
 
@@ -18,7 +18,7 @@ echo '\n Code style \n****************************************\n'
 pep8 --repeat --statistics --count api nova_glue
 
 echo '\n Issues report \n****************************************\n'
-pyflakes api
+pyflakes api nova_glue
 
 echo '\n Pychecker report \n****************************************\n'
 

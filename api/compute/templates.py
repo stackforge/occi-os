@@ -15,6 +15,11 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+"""
+Set of templates.
+"""
+
+#pylint: disable=R0913,E1002,R0903,W0232
 
 from occi import core_model
 

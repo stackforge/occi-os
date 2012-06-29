@@ -15,6 +15,10 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+"""
+Storage related glue :-)
+"""
+
 import random
 
 from nova import image, exception
@@ -25,9 +29,9 @@ from occi import exceptions
 # Connection to the nova APIs
 from nova_glue import vm
 
-volume_api = volume.API()
+VOLUME_API = volume.API()
 
-image_api = image.get_default_image_service()
+IMAGE_API = image.get_default_image_service()
 
 
 def create_storage(size, context, name=None, description=None):
@@ -65,7 +69,7 @@ def create_storage(size, context, name=None, description=None):
     volume_type = None
     metadata = None
     avail_zone = None
-    new_volume = volume_api.create(context,
+    new_volume = VOLUME_API.create(context,
                                    size,
                                    disp_name,
                                    disp_descr,
@@ -84,8 +88,8 @@ def delete_storage_instance(uid, context):
     context -- The os context.
     """
     # TODO: exception handling!
-    instance = _get_volume(uid, context)
-    volume_api.delete(context, instance)
+    instance = get_storage(uid, context)
+    VOLUME_API.delete(context, instance)
 
 
 def snapshot_storage_instance(uid, name, description, context):
@@ -96,8 +100,8 @@ def snapshot_storage_instance(uid, name, description, context):
     context -- The os context.
     """
     # TODO: exception handling!
-    instance = _get_volume(uid, context)
-    volume_api.create_snapshot(context, instance, name, description)
+    instance = get_storage(uid, context)
+    VOLUME_API.create_snapshot(context, instance, name, description)
 
 
 def get_image_architecture(uid, context):
@@ -112,11 +116,11 @@ def get_image_architecture(uid, context):
     uid -- id of the instance!
     context -- The os context.
     """
-    instance = vm._get_vm(uid, context)
+    instance = vm.get_vm(uid, context)
 
     arch = ''
-    id = instance['image_ref']
-    img = image_api.show(context, id)
+    uid = instance['image_ref']
+    img = IMAGE_API.show(context, uid)
     img_properties = img['properties']
     if 'arch' in img_properties:
         arch = img['properties']['arch']
@@ -137,7 +141,7 @@ def get_storage(uid, context):
     context -- the os context
     """
     try:
-        instance = volume_api.get(context, uid)
+        instance = VOLUME_API.get(context, uid)
     except exception.NotFound:
         raise exceptions.HTTPError(404, 'Volume not found!')
     return instance

@@ -15,6 +15,12 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+"""
+Storage link backends.
+"""
+
+#pylint: disable=R0201,W0232
+
 import uuid
 
 from nova_glue import vm

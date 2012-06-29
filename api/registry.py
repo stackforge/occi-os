@@ -15,6 +15,13 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+"""
+OCCI registry
+"""
+
+#R0201:method could be func.E1002:old style obj
+#pylint: disable=R0201,E1002
+
 from occi import registry
 
 from api.extensions import occi_future
@@ -25,7 +32,13 @@ class OCCIRegistry(registry.NonePersistentRegistry):
     Registry for OpenStack.
     """
 
+    def __init__(self):
+        super(OCCIRegistry, self).__init__()
+
     def get_extras(self, extras):
+        """
+        Get data which is encapsulated in the extras.
+        """
         sec_extras = None
         if extras is not None:
             sec_extras = {'user_id': extras['nova_ctx'].user_id,
@@ -50,8 +63,8 @@ class OCCIRegistry(registry.NonePersistentRegistry):
         """
         if (hasattr(mixin, 'related') and
                                     occi_future.SEC_GROUP in mixin.related):
-            be = self.get_backend(mixin, extras)
-            be.destroy(mixin, extras)
+            backend = self.get_backend(mixin, extras)
+            backend.destroy(mixin, extras)
 
         super(OCCIRegistry, self).delete_mixin(mixin, extras)
 
@@ -61,8 +74,8 @@ class OCCIRegistry(registry.NonePersistentRegistry):
         """
         if (hasattr(category, 'related') and
                                     occi_future.SEC_GROUP in category.related):
-            be = occi_future.SecurityGroupBackend()
-            backend = be
-            be.init_sec_group(category, extras)
+            backend = occi_future.SecurityGroupBackend()
+            backend = backend
+            backend.init_sec_group(category, extras)
 
         super(OCCIRegistry, self).set_backend(category, backend, extras)

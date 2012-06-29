@@ -15,6 +15,14 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+"""
+Network link backend!
+"""
+
+#W0613:unused arguments,R0201:mth could be func,R0903:too few pub mthd.
+#W0232:no init
+#pylint: disable=W0613,R0201,R0903,W0232
+
 from occi import backend
 
 # With Quantum:
@@ -57,6 +65,7 @@ class IpNetworkInterfaceBackend(backend.MixinBackend):
     """
     A mixin backend for the IpNetworkingInterface.
     """
+
     def create(self, link, extras):
         """
         Can't create in nova so we don't either.

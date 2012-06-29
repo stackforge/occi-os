@@ -15,12 +15,23 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+"""
+Set of extensions to get OCCI work with OpenStack.
+"""
+
+#W0232:has no __init__ method,R0912:Too many branches (13/12),
+# R0201:Method could be a function,R0903:too few public methods.
+#pylint: disable=W0232,R0912,R0201,R0903
+
 from occi import backend
 from occi import core_model
 from nova_glue import vm, net
 
 
 def get_extensions():
+    """
+    Retrieve the OS specific extensions.
+    """
 
     return  [
              {
@@ -114,6 +125,9 @@ OS_FLOATING_IP_EXT = core_model.Mixin(
 
 ##################### 3. define the extension handler(s) #####################
 class OsComputeActionBackend(backend.ActionBackend):
+    """
+    The OpenStackCompute backend.
+    """
 
     def action(self, entity, action, attributes, extras):
         """

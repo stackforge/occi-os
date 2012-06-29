@@ -19,6 +19,8 @@
 The compute resource backend for OpenStack.
 """
 
+#pylint: disable=W0232,R0201
+
 import logging
 import uuid
 
@@ -37,8 +39,14 @@ LOG = logging.getLogger('api.compute.compute_resource')
 
 
 class ComputeBackend(KindBackend, ActionBackend):
+    """
+    The compute backend.
+    """
 
     def create(self, entity, extras):
+        """
+        Create a VM.
+        """
         LOG.debug('Creating an Virtual machine')
 
         # ignore some attributes - done via templating
@@ -81,9 +89,12 @@ class ComputeBackend(KindBackend, ActionBackend):
                          openstack.OS_CREATE_IMAGE]
 
     def retrieve(self, entity, extras):
+        """
+        Retrieve a VM.
+        """
         uid = entity.attributes['occi.core.id']
         context = extras['nova_ctx']
-        instance = vm._get_vm(uid, context)
+        instance = vm.get_vm(uid, context)
 
         LOG.debug('Retrieving an Virtual machine: ', uid)
 
@@ -105,6 +116,9 @@ class ComputeBackend(KindBackend, ActionBackend):
         set_console_info(entity, uid, extras)
 
     def update(self, old, new, extras):
+        """
+        Update an VM.
+        """
         context = extras['nova_ctx']
         uid = old.attributes['occi.core.id']
 
@@ -112,10 +126,10 @@ class ComputeBackend(KindBackend, ActionBackend):
 
         # update title, summary etc.
         if len(new.attributes['occi.core.title']) > 0:
-            old.attributes['occi.core.title'] =\
+            old.attributes['occi.core.title'] = \
             new.attributes['occi.core.title']
         if len(new.attributes['occi.core.summary']) > 0:
-            old.attributes['occi.core.summary'] =\
+            old.attributes['occi.core.summary'] = \
             new.attributes['occi.core.summary']
 
         # for now we will only handle one mixin change per request
@@ -140,10 +154,15 @@ class ComputeBackend(KindBackend, ActionBackend):
             raise AttributeError(msg)
 
     def replace(self, old, new, extras):
-        # XXX:not doing anything - full updates are hard :-)
+        """
+        XXX:not doing anything - full updates are hard :-)
+        """
         pass
 
     def delete(self, entity, extras):
+        """
+        Remove a VM.
+        """
         msg = ('Removing representation of virtual machine with id: %s') %\
               entity.identifier
         LOG.info(msg)
@@ -154,6 +173,9 @@ class ComputeBackend(KindBackend, ActionBackend):
         vm.delete_vm(uid, context)
 
     def action(self, entity, action, attributes, extras):
+        """
+        Perform an action.
+        """
         # As there is no callback mechanism to update the state
         # of computes known by occi, a call to get the latest representation
         # must be made.
@@ -229,11 +251,11 @@ def attach_to_default_network(vm_net_info, entity, extras):
     vm_net_info['vm_iface']
     link.attributes['occi.networkinterface.mac'] = vm_net_info['mac']
     link.attributes['occi.networkinterface.state'] = 'active'
-    link.attributes['occi.networkinterface.address'] =\
+    link.attributes['occi.networkinterface.address'] = \
     vm_net_info['address']
-    link.attributes['occi.networkinterface.gateway'] =\
+    link.attributes['occi.networkinterface.gateway'] = \
     vm_net_info['gateway']
-    link.attributes['occi.networkinterface.allocation'] =\
+    link.attributes['occi.networkinterface.allocation'] = \
     vm_net_info['allocation']
 
     entity.links.append(link)
@@ -266,7 +288,7 @@ def set_console_info(entity, uid, extras):
             links=None, summary='',
             title='')
         ssh_console.attributes['occi.core.id'] = identifier
-        ssh_console.attributes['org.openstack.compute.console.ssh'] =\
+        ssh_console.attributes['org.openstack.compute.console.ssh'] = \
         'ssh://' + address + ':22'
         registry.add_resource(identifier, ssh_console, extras)
 
@@ -289,7 +311,7 @@ def set_console_info(entity, uid, extras):
             links=None, summary='',
             title='')
         vnc_console.attributes['occi.core.id'] = identifier
-        vnc_console.attributes['org.openstack.compute.console.vnc'] =\
+        vnc_console.attributes['org.openstack.compute.console.vnc'] = \
         console['url']
 
         registry.add_resource(identifier, vnc_console, extras)

@@ -15,6 +15,13 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+"""
+OCCI WSGI app :-)
+"""
+
+# W0613:unused args,R0903:too few pub methods
+# pylint: disable=W0613,R0903
+
 import logging
 
 from nova import flags
@@ -40,7 +47,6 @@ from occi import backend
 from occi import core_model
 from occi import wsgi as occi_wsgi
 from occi.extensions import infrastructure
-
 
 LOG = logging.getLogger('nova.api.occi.wsgi')
 
@@ -170,7 +176,7 @@ class OCCIApplication(occi_wsgi.Application, wsgi.Application):
         # register/refresh the openstack security groups as Mixins
         self._refresh_security_mixins(extras)
         # register/refresh the openstack floating IP pools as Mixins
-        self._refresh_floating_ip_pool_mixins(extras)
+        self._refresh_floating_ippools(extras)
 
         return self._call_occi(environ, response, nova_ctx=extras['nova_ctx'],
                                                         registry=self.registry)
@@ -197,7 +203,7 @@ class OCCIApplication(occi_wsgi.Application, wsgi.Application):
         }
 
         if not show_default_net_config:
-            net_attrs = self._get_net_info(net_attrs)
+            net_attrs = get_net_info(net_attrs)
 
         default_network = core_model.Resource(name, infrastructure.NETWORK,
                         [infrastructure.IPNETWORK], [],
@@ -208,28 +214,6 @@ class OCCIApplication(occi_wsgi.Application, wsgi.Application):
         self.registry.add_resource(name, default_network, None)
 
         self.no_default_network = False
-
-    def _get_net_info(self, net_attrs):
-        """
-        Gets basic information about the default network.
-        """
-        ctx = context.get_admin_context()
-
-        network_api = api.API()
-        networks = network_api.get_all(ctx)
-
-        if len(networks) > 1:
-            msg = ('There is more that one network.'
-                    'Using the first network: %s') % networks[0]['id']
-            LOG.warn(msg)
-
-        net_attrs['occi.network.address'] = networks[0]['cidr']
-        net_attrs['occi.network.label'] = 'public'
-        net_attrs['occi.network.state'] = 'up'
-        net_attrs['occi.network.gateway'] = networks[0]['gateway'],
-        net_attrs['occi.network.allocation'] = 'dhcp'
-
-        return net_attrs
 
     def _refresh_os_mixins(self, extras):
         """
@@ -282,7 +266,7 @@ class OCCIApplication(occi_wsgi.Application, wsgi.Application):
                 term=itype,
                 scheme=template_schema,
                 related=[templates.RES_TEMPLATE],
-                attributes=self._get_resource_attributes(os_flavours[itype]),
+                attributes=get_resource_attributes(os_flavours[itype]),
                 title='This is an openstack ' + itype + ' flavor.',
                 location='/' + itype + '/')
             msg = ('Registering an OpenStack flavour/instance type: %s') % \
@@ -293,22 +277,6 @@ class OCCIApplication(occi_wsgi.Application, wsgi.Application):
                 self.registry.get_backend(resource_template, extras)
             except AttributeError:
                 self.register_backend(resource_template, MIXIN_BACKEND)
-
-    def _get_resource_attributes(self, attrs):
-        """
-        Gets the attributes required to render occi compliant compute
-        resource information.
-        """
-        #TODO(dizz): This is hardcoded atm. Might be good to have
-        #            it configurable
-        attrs = {
-                 'occi.compute.cores': 'immutable',
-                 'occi.compute.memory': 'immutable',
-                 'org.openstack.compute.swap': 'immutable',
-                 'org.openstack.compute.storage.root': 'immutable',
-                 'org.openstack.compute.storage.ephemeral': 'immutable',
-                 }
-        return attrs
 
     def _refresh_security_mixins(self, extras):
         """
@@ -342,7 +310,7 @@ class OCCIApplication(occi_wsgi.Application, wsgi.Application):
                 except AttributeError:
                     self.register_backend(sec_mix, MIXIN_BACKEND)
 
-    def _refresh_floating_ip_pool_mixins(self, extras):
+    def _refresh_floating_ippools(self, extras):
         """
         Gets the list of floating ip pools and registers them as mixins.
         """
@@ -361,3 +329,43 @@ class OCCIApplication(occi_wsgi.Application, wsgi.Application):
                 self.registry.get_backend(pool_mixin, extras)
             except AttributeError:
                 self.register_backend(pool_mixin, MIXIN_BACKEND)
+
+
+def get_net_info(net_attrs):
+    """
+    Gets basic information about the default network.
+    """
+    ctx = context.get_admin_context()
+
+    network_api = api.API()
+    networks = network_api.get_all(ctx)
+
+    if len(networks) > 1:
+        msg = ('There is more that one network.'
+               'Using the first network: %s') % networks[0]['id']
+        LOG.warn(msg)
+
+    net_attrs['occi.network.address'] = networks[0]['cidr']
+    net_attrs['occi.network.label'] = 'public'
+    net_attrs['occi.network.state'] = 'up'
+    net_attrs['occi.network.gateway'] = networks[0]['gateway'],
+    net_attrs['occi.network.allocation'] = 'dhcp'
+
+    return net_attrs
+
+
+def get_resource_attributes(attrs):
+    """
+    Gets the attributes required to render occi compliant compute
+    resource information.
+    """
+    #TODO(dizz): This is hardcoded atm. Might be good to have
+    #            it configurable
+    attrs = {
+        'occi.compute.cores': 'immutable',
+        'occi.compute.memory': 'immutable',
+        'org.openstack.compute.swap': 'immutable',
+        'org.openstack.compute.storage.root': 'immutable',
+        'org.openstack.compute.storage.ephemeral': 'immutable',
+        }
+    return attrs

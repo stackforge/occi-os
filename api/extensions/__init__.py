@@ -15,6 +15,13 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+"""
+A package containing extensions for OCCI.
+"""
+
+#W0122:use of exev
+#pylint: disable=W0122
+
 import os
 
 import logging

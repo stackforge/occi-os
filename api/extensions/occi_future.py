@@ -15,6 +15,12 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+"""
+Features some extensions which later might make it into OCCI.
+"""
+
+#pylint: disable=W0232,R0903,R0201
+
 import random
 
 from nova_glue import security
@@ -28,6 +34,9 @@ from occi import core_model
 
 
 def get_extensions():
+    """
+    Retrieve a set of extensions.
+    """
     return [
             {
              'categories': [CONSOLE_LINK, SSH_CONSOLE, VNC_CONSOLE, ],
@@ -104,11 +113,17 @@ SEC_GROUP = core_model.Mixin(
 
 # An extended Mixin, an extension
 class UserSecurityGroupMixin(core_model.Mixin):
+    """
+    Empty Mixin.
+    """
     pass
 
 
 # The same approach can be used to create and delete VM images.
 class SecurityGroupBackend(backend.UserDefinedMixinBackend):
+    """
+    Security Group backend.
+    """
 
     def init_sec_group(self, category, extras):
         """
@@ -139,6 +154,9 @@ class SecurityGroupBackend(backend.UserDefinedMixinBackend):
 
 
 class SecurityRuleBackend(backend.KindBackend):
+    """
+    Security rule backend.
+    """
 
     def create(self, entity, extras):
         """
@@ -175,11 +193,11 @@ def make_sec_rule(entity, sec_grp_id):
     """
     Create and validate the security rule.
     """
-    nm = random.randrange(0, 99999999)
-    sg_rule = {'id': nm}
+    name = random.randrange(0, 99999999)
+    sg_rule = {'id': name}
     entity.attributes['occi.core.id'] = str(sg_rule['id'])
     sg_rule['parent_group_id'] = sec_grp_id
-    prot =\
+    prot = \
     entity.attributes['occi.network.security.protocol'].lower().strip()
     if prot in ('tcp', 'udp', 'icmp'):
         sg_rule['protocol'] = prot

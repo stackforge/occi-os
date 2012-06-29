@@ -15,6 +15,11 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+"""
+Security related 'glue'
+"""
+
+
 from nova import compute
 from nova import db
 from nova.flags import FLAGS
@@ -23,9 +28,9 @@ from nova.openstack.common import importutils
 # connect to nova
 from occi import exceptions
 
-compute_api = compute.API()
+COMPUTE_API = compute.API()
 
-sec_handler = importutils.import_object(FLAGS.security_group_handler)
+SEC_HANDLER = importutils.import_object(FLAGS.security_group_handler)
 
 
 def create_group(name, description, context):
@@ -44,7 +49,7 @@ def create_group(name, description, context):
              'name': name,
              'description': description}
     db.security_group_create(context, group)
-    sec_handler.trigger_security_group_create_refresh(context, group)
+    SEC_HANDLER.trigger_security_group_create_refresh(context, group)
 
 
 def remove_group(group_id, context):
@@ -59,7 +64,7 @@ def remove_group(group_id, context):
         raise AttributeError('Security group is still in use')
 
     db.security_group_destroy(context, group_id)
-    sec_handler.trigger_security_group_destroy_refresh(
+    SEC_HANDLER.trigger_security_group_destroy_refresh(
         context, group_id)
 
 
@@ -111,9 +116,9 @@ def remove_rule(rule, context):
     security_group = db.security_group_get(context, group_id)
 
     db.security_group_rule_destroy(context, rule['id'])
-    sec_handler.trigger_security_group_rule_destroy_refresh(context,
+    SEC_HANDLER.trigger_security_group_rule_destroy_refresh(context,
         [rule['id']])
-    compute_api.trigger_security_group_rules_refresh(context,
+    COMPUTE_API.trigger_security_group_rules_refresh(context,
                                                      security_group['id'])
 
 

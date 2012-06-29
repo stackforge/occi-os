@@ -15,6 +15,11 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+"""
+Backends for the storage resource.
+"""
+
+#pylint: disable=R0201,W0232,W0613
 
 from occi import backend
 from occi import exceptions
@@ -81,16 +86,19 @@ class StorageBackend(backend.KindBackend, backend.ActionBackend):
             if (('occi.core.title' in new.attributes)
                 or ('occi.core.title' in new.attributes)):
                 if len(new.attributes['occi.core.title']) > 0:
-                    old.attributes['occi.core.title'] =\
+                    old.attributes['occi.core.title'] = \
                     new.attributes['occi.core.title']
 
                 if len(new.attributes['occi.core.summary']) > 0:
-                    old.attributes['occi.core.summary'] =\
+                    old.attributes['occi.core.summary'] = \
                     new.attributes['occi.core.summary']
             else:
                 raise AttributeError('Cannot update the supplied attributes.')
 
     def replace(self, old, new, extras):
+        """
+        Ignored.
+        """
         pass
 
     def delete(self, entity, extras):

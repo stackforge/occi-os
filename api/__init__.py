@@ -34,6 +34,9 @@ sample_app entry point is defined in setup.py:
 which point to this function call (<module name>:function).
 """
 
+# W0613:unused args
+# pylint: disable=W0613
+
 from api import wsgi
 
 
