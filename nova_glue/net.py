@@ -56,10 +56,12 @@ def get_adapter_info(uid, context):
 
     # OS-specific if a VM is stopped it has no IP address
     if len(sj[0]['network']['subnets'][0]['ips']) > 0:
-        vm_net_info['address'] = sj[0]['network']['subnets'][0]['ips'][0]['address']
+        adr = sj[0]['network']['subnets'][0]['ips'][0]['address']
+        vm_net_info['address'] = adr
     else:
         vm_net_info['address'] = ''
-    vm_net_info['gateway'] = sj[0]['network']['subnets'][0]['gateway']['address']
+    gw = sj[0]['network']['subnets'][0]['gateway']['address']
+    vm_net_info['gateway'] = gw
     vm_net_info['mac'] = sj[0]['address']
     if sj[0]['network']['subnets'][0]['ips'][0]['type'] == 'fixed':
         vm_net_info['allocation'] = 'static'
@@ -97,9 +99,10 @@ def add_flaoting_ip_to_vm(uid, attributes, context):
         LOG.warn('multiple fixed_ips exist, using the first')
 
     try:
+        address = fixed_ips[0]['address']
         network_api.associate_floating_ip(context, vm_instance,
                                           floating_address=address,
-                                          fixed_address=fixed_ips[0]['address'])
+                                          fixed_address=address)
     except exception.FloatingIpAssociated:
         msg = 'floating ip is already associated'
         raise AttributeError(msg)

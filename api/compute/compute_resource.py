@@ -64,12 +64,12 @@ class ComputeBackend(KindBackend, ActionBackend):
         # set some attributes
         entity.attributes['occi.core.id'] = instance['uuid']
         entity.attributes['occi.compute.hostname'] = instance['hostname']
-        entity.attributes['occi.compute.architecture'] = vol.get_image_architecture\
-            (uid, extras['nova_ctx'])
+        entity.attributes['occi.compute.architecture'] = \
+            vol.get_image_architecture(uid, extras['nova_ctx'])
         entity.attributes['occi.compute.cores'] = str(instance['vcpus'])
-        entity.attributes['occi.compute.speed'] = str(0.0) # N/A in instance
-        entity.attributes['occi.compute.memory'] = str(float
-                                                           (instance['memory_mb']) / 1024)
+        entity.attributes['occi.compute.speed'] = str(0.0)  # N/A in instance
+        value = str(float(instance['memory_mb']) / 1024)
+        entity.attributes['occi.compute.memory'] = value
         entity.attributes['occi.compute.state'] = 'inactive'
 
         # set valid actions
@@ -94,8 +94,8 @@ class ComputeBackend(KindBackend, ActionBackend):
 
         # set up to date attributes
         entity.attributes['occi.compute.cores'] = str(instance['vcpus'])
-        entity.attributes['occi.compute.memory'] = str(float
-                                                           (instance['memory_mb']) / 1024)
+        value = str(float(instance['memory_mb']) / 1024)
+        entity.attributes['occi.compute.memory'] = value
 
         #Now we have the instance state, get its updated network info
         net_info = net.get_adapter_info(uid, context)

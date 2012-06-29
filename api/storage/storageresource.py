@@ -156,4 +156,3 @@ class StorageBackend(backend.KindBackend, backend.ActionBackend):
             msg = ('Resize storage actio requested resource with id: %s') % \
                                                             entity.identifier
             raise AttributeError(msg)
-

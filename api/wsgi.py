@@ -26,9 +26,8 @@ from nova.compute import instance_types
 from nova.network import api
 from nova.openstack.common import cfg
 
-import registry
-import extensions
-
+from api import registry
+from api import extensions
 from api.compute import compute_resource
 from api.compute import templates
 from api.extensions import occi_future
@@ -79,8 +78,7 @@ class OCCIApplication(occi_wsgi.Application, wsgi.Application):
         """
         Initialize the WSGI OCCI application.
         """
-        super(OCCIApplication, self).__init__(
-                                registry=registry.OCCIRegistry())
+        super(OCCIApplication, self).__init__(registry=registry.OCCIRegistry())
         self.net_manager = FLAGS.get("net_manager", "nova")
         self.no_default_network = True
         self._register_occi_infra()

@@ -46,4 +46,3 @@ class IpNetworkBackend(backend.MixinBackend):
 
     def create(self, entity, extras):
         raise AttributeError('Currenlty not supported.')
-

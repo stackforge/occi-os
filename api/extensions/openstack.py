@@ -115,7 +115,6 @@ OS_FLOATING_IP_EXT = core_model.Mixin(
 ##################### 3. define the extension handler(s) #####################
 class OsComputeActionBackend(backend.ActionBackend):
 
-
     def action(self, entity, action, attributes, extras):
         """
         This is called by pyssf when an action request is issued.
@@ -125,8 +124,8 @@ class OsComputeActionBackend(backend.ActionBackend):
 
         if action == OS_CHG_PWD:
             if 'org.openstack.credentials.admin_pwd' not in attributes:
-                msg = 'org.openstack.credentials.admin_pwd was not supplied in '\
-                      'the request.'
+                msg = 'org.openstack.credentials.admin_pwd was not supplied' \
+                      ' in the request.'
                 raise AttributeError(msg)
 
             new_password = attributes['org.openstack.credentials.admin_pwd']
@@ -149,8 +148,8 @@ class OsComputeActionBackend(backend.ActionBackend):
                                                   OS_FLOATING_IP_EXT.term:
                     #TODO(dizz): implement support for multiple floating ips
                     #            needs support in pyssf for URI in link
-                    raise AttributeError('There is already a floating IP assigned to'
-                                         ' the VM')
+                    raise AttributeError('There is already a floating IP '
+                                         'assigned to the VM')
 
             address = net.add_flaoting_ip_to_vm(uid, attributes, context)
 

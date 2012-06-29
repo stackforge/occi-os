@@ -15,13 +15,13 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-
 import uuid
 
 from nova_glue import vm
 
 from occi import backend
 from occi.extensions import infrastructure
+
 
 class StorageLinkBackend(backend.KindBackend):
     """

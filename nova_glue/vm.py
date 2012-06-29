@@ -103,12 +103,11 @@ def create_vm(entity, context):
         if occi_future.SEC_GROUP in mixin.related:
             sg_names.append(mixin.term)
 
-    flavor_name = resource_template.term
+    name = resource_template.term
     image_id = os_template.os_id
 
-    if flavor_name:
-        inst_type = compute.instance_types.get_instance_type_by_name\
-            (flavor_name)
+    if name:
+        inst_type = compute.instance_types.get_instance_type_by_name(name)
     else:
         inst_type = compute.instance_types.get_default_instance_type()
         msg = ('No resource template was found in the request. '
@@ -326,7 +325,7 @@ def attach_volume(instance_id, volume_id, mount_point, context):
     """
     # TODO: check exception handling!
     instance = _get_vm(instance_id, context)
-    volume_id =  vol._get_volume(volume_id, context)[0]
+    volume_id = vol.get_storage(volume_id, context)[0]
 
     compute_api.attach_volume(
         context,
@@ -342,7 +341,7 @@ def detach_volume(volume_id, context):
     volume_id -- Id of the volume.
     context -- the os context.
     """
-    volume_id =  vol._get_volume(volume_id, context)[0]
+    volume_id = vol._get_volume(volume_id, context)[0]
 
     compute_api.detach_volumne(context, volume_id)
 
