@@ -15,34 +15,47 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import random
 
-def create_storage(entity, context):
+from nova import image, exception
+from nova import volume
+
+from occi import exceptions
+
+# Connection to the nova APIs
+
+volume_api = volume.API()
+
+image_api = image.get_default_image_service()
+
+
+def create_storage(size, context, name=None, description=None):
     """
     Create a storage instance.
-    """
-    size = float(entity.attributes['occi.storage.size'])
 
+    size -- Size of the storage. ('occi.storage.size')
+    context -- The os context.
+    name -- defaults to a random number if needed.
+    description -- defaults to the name
+    """
+    # TODO: exception handling!
     # TODO(dizz): A blueprint?
     # OpenStack deals with size in terms of integer.
     # Need to convert float to integer for now and only if the float
     # can be losslessly converted to integer
     # e.g. See nova/quota.py:allowed_volumes(...)
     if not size.is_integer:
-        msg = 'Volume sizes cannot be specified as fractional floats.'
-        raise exc.HTTPBadRequest(msg)
-
+        raise AttributeError('Volume sizes cannot be specified as fractional'
+                             ' floats.')
     size = str(int(size))
 
     disp_name = ''
-    try:
-        disp_name = entity.attributes['occi.core.title']
-    except KeyError:
-        #Generate more suitable name as it's used for hostname
-        #where no hostname is supplied.
-        disp_name = entity.attributes['occi.core.title'] = str(random
-        .randrange(0, 99999999)) + '-storage.occi-wg.org'
-    if 'occi.core.summary' in entity.attributes:
-        disp_descr = entity.attributes['occi.core.summary']
+    if name is not None:
+        disp_name = name
+    else:
+        disp_name = str(random.randrange(0, 99999999)) + '-storage.occi-wg.org'
+    if description is not None:
+        disp_descr = description
     else:
         disp_descr = disp_name
 
@@ -62,29 +75,28 @@ def create_storage(entity, context):
     return new_volume
 
 
-def get_storage_instance(uid, context):
-    """
-    Retrieve a storage instance.
-    """
-    try:
-        instance = volume_api.get(context, uid)
-    except exception.NotFound:
-        raise exc.HTTPNotFound()
-    return instance
-
-
-def delete_storage_instance(instance, context):
+def delete_storage_instance(uid, context):
     """
     Delete a storage instance.
+
+    uid -- Id of the volume.
+    context -- The os context.
     """
+    # TODO: exception handling!
+    instance = _get_volume(uid, context)
     volume_api.delete(context, instance)
 
 
-def snapshot_storage_instance(volume, name, description, context):
+def snapshot_storage_instance(uid, name, description, context):
     """
     Snapshots an storage instance.
+
+    uid -- Id of the volume.
+    context -- The os context.
     """
-    volume_api.create_snapshot(context, volume, name, description)
+    # TODO: exception handling!
+    instance = _get_volume(uid, context)
+    volume_api.create_snapshot(context, instance, name, description)
 
 
 def get_image_architecture(instance, context):
@@ -109,3 +121,17 @@ def get_image_architecture(instance, context):
         # if all attempts fail set it to a default value
         arch = 'x86'
     return arch
+
+
+def _get_volume(uid, context):
+    """
+    Retrieve an Volume instance from nova.
+
+    uid -- id of the instance
+    context -- the os context
+    """
+    try:
+        instance = volume_api.get(context, uid)
+    except exception.NotFound:
+        raise exceptions.HTTPError(404, 'Volume not found!')
+    return instance
