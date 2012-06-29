@@ -30,6 +30,7 @@ class OsTemplate(core_model.Mixin):
                                          title, attributes, location)
         self.os_id = os_id
 
+
 OS_TEMPLATE = OsTemplate('http://schemas.ogf.org/occi/infrastructure#',
                                                                     'os_tpl')
 
@@ -42,3 +43,6 @@ class ResourceTemplate(core_model.Mixin):
     """
     pass
 
+
+RES_TEMPLATE = ResourceTemplate('http://schemas.ogf.org/occi/infrastructure#',
+                                                                'resource_tpl')

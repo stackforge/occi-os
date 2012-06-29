@@ -15,48 +15,52 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from occi import backend
-from occi import core_model
-from occi.extensions import infrastructure
-from occi import wsgi as occi_wsgi
+import logging
 
+from nova import flags
+from nova import wsgi
+from nova import context
+from nova import image
+from nova import db
+from nova.compute import instance_types
+from nova.network import api
+from nova.openstack.common import cfg
 
-# TODO(tmetsch): cleanup!
+import registry
+import extensions
+
 from api.compute import compute_resource
 from api.compute import templates
-import extensions
 from api.extensions import occi_future
 from api.network import networklink
 from api.network import networkresource
-import registry
 from api.storage import storagelink
 from api.storage import storageresource
 
-from nova.compute import instance_types
-from nova import context
-from nova import db
-from nova import flags
-from nova import image
-from nova import log
-from nova.network import api as net_api
-from nova.openstack.common import cfg
-from nova import wsgi
+from occi import backend
+from occi import core_model
+from occi import wsgi as occi_wsgi
+from occi.extensions import infrastructure
 
 
-#Hi I'm a logger, use me ! :-)
-LOG = log.getLogger('nova.api.occi.wsgi')
+LOG = logging.getLogger('nova.api.occi.wsgi')
 
 #Setup options
 OCCI_OPTS = [
              cfg.BoolOpt("show_default_net_config",
-                default=False,
-                help="Show the default network configuration to clients"),
+                         default=False,
+                         help="Show the default network configuration to " \
+                              "clients"),
              cfg.BoolOpt("filter_kernel_and_ram_images",
-                default=True,
-                help="Whether to show the Kernel and RAM images to clients"),
+                         default=True,
+                         help="Whether to show the Kernel and RAM images to " \
+                              "clients"),
              cfg.StrOpt("net_manager",
                         default="nova",
                         help="The network manager to use with the OCCI API."),
+             cfg.IntOpt("occiapi_listen_port",
+                        default=8787,
+                        help="Port OCCI interface will listen on.")
              ]
 
 FLAGS = flags.FLAGS
@@ -213,7 +217,7 @@ class OCCIApplication(occi_wsgi.Application, wsgi.Application):
         """
         ctx = context.get_admin_context()
 
-        network_api = net_api.API()
+        network_api = api.API()
         networks = network_api.get_all(ctx)
 
         if len(networks) > 1:
@@ -344,7 +348,7 @@ class OCCIApplication(occi_wsgi.Application, wsgi.Application):
         """
         Gets the list of floating ip pools and registers them as mixins.
         """
-        network_api = net_api.API()
+        network_api = api.API()
         pools = network_api.get_floating_ip_pools(extras['nova_ctx'])
 
         for pool in pools:
