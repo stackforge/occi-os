@@ -18,16 +18,20 @@
 """
 The compute resource backend for OpenStack.
 """
+
 import logging
 import uuid
+
+from api.extensions import openstack, occi_future
+from api.compute import templates
+
+from nova_glue import net
+from nova_glue import vm
+from nova_glue import vol
 
 from occi import core_model
 from occi.backend import KindBackend, ActionBackend
 from occi.extensions import infrastructure
-
-from api import nova_glue
-from api.extensions import openstack, occi_future
-from api.compute import templates
 
 LOG = logging.getLogger('api.compute.compute_resource')
 
@@ -42,25 +46,26 @@ class ComputeBackend(KindBackend, ActionBackend):
            'occi.compute.speed' in entity.attributes or \
            'occi.compute.memory' in entity.attributes or \
            'occi.compute.architecture' in entity.attributes:
-            msg = 'There are unsupported attributes in the request.'
-            LOG.error(msg)
-            raise AttributeError(msg)
+            raise AttributeError('There are unsupported attributes in the '
+                                 'request.')
 
         # create the VM
-        instance = nova_glue.create_vm(entity, extras['nova_ctx'])
+        context = extras['nova_ctx']
+        instance = vm.create_vm(entity, context)
+        uid = instance['uuid']
 
         # deal with some networking stuff
-        net_info = nova_glue.get_adapter_info(instance, extras['nova_ctx'])
+        net_info = net.get_adapter_info(uid, context)
         attach_to_default_network(net_info, entity, extras)
 
         # add consoles and storage links
-        set_console_info(entity, instance, extras)
+        set_console_info(entity, uid, extras)
 
         # set some attributes
         entity.attributes['occi.core.id'] = instance['uuid']
         entity.attributes['occi.compute.hostname'] = instance['hostname']
-        entity.attributes['occi.compute.architecture'] = nova_glue.get_image_architecture\
-            (instance, extras['nova_ctx'])
+        entity.attributes['occi.compute.architecture'] = vol.get_image_architecture\
+            (uid, extras['nova_ctx'])
         entity.attributes['occi.compute.cores'] = str(instance['vcpus'])
         entity.attributes['occi.compute.speed'] = str(0.0) # N/A in instance
         entity.attributes['occi.compute.memory'] = str(float
@@ -78,12 +83,12 @@ class ComputeBackend(KindBackend, ActionBackend):
     def retrieve(self, entity, extras):
         uid = entity.attributes['occi.core.id']
         context = extras['nova_ctx']
-        instance = nova_glue.get_vm_instance(uid, context)
+        instance = vm._get_vm(uid, context)
 
         LOG.debug('Retrieving an Virtual machine: ', uid)
 
         # set state and applicable actions!
-        state, actions = nova_glue.get_occi_state(uid, context)
+        state, actions = vm.get_occi_state(uid, context)
         entity.attributes['occi.compute.state'] = state
         entity.actions = actions
 
@@ -93,11 +98,11 @@ class ComputeBackend(KindBackend, ActionBackend):
                                                            (instance['memory_mb']) / 1024)
 
         #Now we have the instance state, get its updated network info
-        net_info = nova_glue.get_adapter_info(instance, context)
+        net_info = net.get_adapter_info(uid, context)
         attach_to_default_network(net_info, entity, extras)
 
         # add consoles and storage links
-        set_console_info(entity, instance, extras)
+        set_console_info(entity, uid, extras)
 
     def update(self, old, new, extras):
         context = extras['nova_ctx']
@@ -117,20 +122,20 @@ class ComputeBackend(KindBackend, ActionBackend):
         mixin = new.mixins[0]
         if isinstance(mixin, templates.ResourceTemplate):
             flavor_name = mixin.term
-            nova_glue.resize_vm(uid, flavor_name, context)
+            vm.resize_vm(uid, flavor_name, context)
             old.attributes['occi.compute.state'] = 'inactive'
             # now update the mixin info
             # TODO(tmetsch): remove old mixin!!!
             old.mixins.append(mixin)
         elif isinstance(mixin, templates.OsTemplate):
             image_href = mixin.os_id
-            nova_glue.rebuild_vm(uid, image_href, context)
+            vm.rebuild_vm(uid, image_href, context)
             old.attributes['occi.compute.state'] = 'inactive'
             #now update the mixin info
             # TODO(tmetsch): remove old mixin!!!
             old.mixins.append(mixin)
         else:
-            msg = ('Unrecognised mixin. %s') % str(mixin)
+            msg = ('Unrecognized mixin. %s') % str(mixin)
             LOG.error(msg)
             raise AttributeError(msg)
 
@@ -146,7 +151,7 @@ class ComputeBackend(KindBackend, ActionBackend):
         context = extras['nova_ctx']
         uid = entity.attributes['occi.core.id']
 
-        nova_glue.delete_vm(uid, context)
+        vm.delete_vm(uid, context)
 
     def action(self, entity, action, attributes, extras):
         # As there is no callback mechanism to update the state
@@ -159,7 +164,7 @@ class ComputeBackend(KindBackend, ActionBackend):
             raise AttributeError("This action is currently not applicable.")
         elif action == infrastructure.START:
             state = entity.attributes['occi.compute.state']
-            nova_glue.start_vm(uid, state, context)
+            vm.start_vm(uid, state, context)
             entity.attributes['occi.compute.state'] = 'active'
             entity.actions = [infrastructure.STOP,
                               infrastructure.SUSPEND,
@@ -168,18 +173,18 @@ class ComputeBackend(KindBackend, ActionBackend):
                               openstack.OS_CONFIRM_RESIZE,
                               openstack.OS_CREATE_IMAGE]
         elif action == infrastructure.STOP:
-            nova_glue.stop_vm(uid, context)
+            vm.stop_vm(uid, context)
             entity.attributes['occi.compute.state'] = 'inactive'
             entity.actions = [infrastructure.START]
         elif action == infrastructure.RESTART:
             if not 'method' in attributes:
                 raise AttributeError('Please provide a method!')
             method = attributes['method']
-            nova_glue.restart_vm(uid, method, context)
+            vm.restart_vm(uid, method, context)
             entity.attributes['occi.compute.state'] = 'inactive'
             entity.actions = []
         elif action == infrastructure.SUSPEND:
-            nova_glue.suspend_vm(uid, context)
+            vm.suspend_vm(uid, context)
             entity.attributes['occi.compute.state'] = 'suspended'
             entity.actions = [infrastructure.START]
 
@@ -235,7 +240,7 @@ def attach_to_default_network(vm_net_info, entity, extras):
     registry.add_resource(identifier, link, extras)
 
 
-def set_console_info(entity, instance, extras):
+def set_console_info(entity, uid, extras):
     """
     Adds console access information to the resource.
     """
@@ -276,7 +281,7 @@ def set_console_info(entity, instance, extras):
         entity.links.append(ssh_console_link)
 
     if not vnc_console_present:
-        console = nova_glue.get_vnc_for_vm(instance, extras['nova_ctx'])
+        console = vm.get_vnc(uid, extras['nova_ctx'])
 
         identifier = str(uuid.uuid4())
         vnc_console = core_model.Resource(
