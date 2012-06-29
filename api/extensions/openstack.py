@@ -17,10 +17,7 @@
 
 from occi import backend
 from occi import core_model
-
-######################## OpenStack Specific Addtitions #######################
-######### 1. define the method to retreive all extension information #########
-from api import nova_glue
+from nova_glue import vm, net
 
 
 def get_extensions():
@@ -124,102 +121,52 @@ class OsComputeActionBackend(backend.ActionBackend):
         This is called by pyssf when an action request is issued.
         """
         context = extras['nova_ctx']
-
-        instance = nova_glue.get_vm_instance(entity.attributes['occi.core' \
-                                                                    '.id'],
-                                             context)
+        uid = entity.attributes['occi.core.id']
 
         if action == OS_CHG_PWD:
-            self._os_chg_passwd_vm(entity, attributes, instance, context)
-        elif action == OS_REVERT_RESIZE:
-            self._os_revert_resize_vm(entity, instance, context)
-        elif action == OS_CONFIRM_RESIZE:
-            self._os_confirm_resize_vm(entity, instance, context)
-        elif action == OS_CREATE_IMAGE:
-            self._os_create_image(entity, attributes, instance, context)
-        elif action == OS_ALLOC_FLOATING_IP:
-            self._os_allocate_floating_ip(entity, attributes, instance,
-                                          context)
-        elif action == OS_DEALLOC_FLOATING_IP:
-            self._os_deallocate_floating_ip(entity, instance, context)
-        else:
-            raise AttributeError('Not applicable action.')
-
-    def _os_chg_passwd_vm(self, entity, attributes, instance, context):
-        """
-        Implements changing of a vm's admin password
-        """
-        # Use the password extension?
-        if 'org.openstack.credentials.admin_pwd' not in attributes:
-            msg = 'org.openstack.credentials.admin_pwd was not supplied in ' \
-                  'the request.'
-            raise AttributeError(msg)
-
-        new_password = attributes['org.openstack.credentials.admin_pwd']
-        nova_glue.set_password_for_vm(instance, new_password, context)
-
-        # No need to update attributes - state remains the same.
-
-    def _os_revert_resize_vm(self, entity, instance, context):
-        """
-        Implements reverting of a resized vm
-        """
-        nova_glue.revert_resize_vm(instance, context)
-        entity.attributes['occi.compute.state'] = 'inactive'
-
-    def _os_confirm_resize_vm(self, entity, instance, context):
-        """
-        Implements the confirmation of a resized vm.
-        """
-        nova_glue.confirm_resize_vm(instance, context)
-
-        entity.attributes['occi.compute.state'] = 'active'
-
-    def _os_create_image(self, entity, attributes, instance, context):
-        """
-        implements the creation of an image of the specified vm
-        """
-        if 'org.openstack.snapshot.image_name' not in attributes:
-            raise AttributeError('Missing image name')
-
-        image_name = attributes['org.openstack.snapshot.image_name']
-        props = {}
-
-        nova_glue.snapshot_vm(instance, image_name, props, context)
-
-    def _os_allocate_floating_ip(self, entity, attributes, instance, context):
-        """
-        This allocates a floating ip from the supplied floating ip pool. The
-        pool is specified as an optional parameter in the action request.
-        Currently, this only supports the assignment of 1 floating IP.
-        """
-        for mixin in entity.mixins:
-            if (mixin.scheme + mixin.term) == OS_FLOATING_IP_EXT.scheme + \
-                                                    OS_FLOATING_IP_EXT.term:
-                #TODO(dizz): implement support for multiple floating ips
-                #            needs support in pyssf for URI in link
-                msg = 'There is already a floating IP assigned to the VM'
+            if 'org.openstack.credentials.admin_pwd' not in attributes:
+                msg = 'org.openstack.credentials.admin_pwd was not supplied in '\
+                      'the request.'
                 raise AttributeError(msg)
 
-        address = nova_glue.add_flaoting_ip_to_vm(instance, attributes,
-                                                  context)
+            new_password = attributes['org.openstack.credentials.admin_pwd']
+            vm.set_password_for_vm(uid, new_password, context)
+        elif action == OS_REVERT_RESIZE:
+            vm.revert_resize_vm(uid, context)
+            entity.attributes['occi.compute.state'] = 'inactive'
+        elif action == OS_CONFIRM_RESIZE:
+            vm.confirm_resize_vm(uid, context)
+            entity.attributes['occi.compute.state'] = 'active'
+        elif action == OS_CREATE_IMAGE:
+            if 'org.openstack.snapshot.image_name' not in attributes:
+                raise AttributeError('Missing image name')
 
-        # once the address is allocated we need to reflect that fact
-        # on the resource holding it.
-        entity.mixins.append(OS_FLOATING_IP_EXT)
-        entity.attributes['org.openstack.network.floating.ip'] = address
+            image_name = attributes['org.openstack.snapshot.image_name']
+            vm.snapshot_vm(uid, image_name, context)
+        elif action == OS_ALLOC_FLOATING_IP:
+            for mixin in entity.mixins:
+                if (mixin.scheme + mixin.term) == OS_FLOATING_IP_EXT.scheme +\
+                                                  OS_FLOATING_IP_EXT.term:
+                    #TODO(dizz): implement support for multiple floating ips
+                    #            needs support in pyssf for URI in link
+                    raise AttributeError('There is already a floating IP assigned to'
+                                         ' the VM')
 
-    def _os_deallocate_floating_ip(self, entity, instance, context):
-        """
-        This deallocates a floating ip from the compute resource.
-        This returns the deallocated IP address to the pool.
-        """
-        address = entity.attributes['org.openstack.network.floating.ip']
-        nova_glue.remove_floating_ip_from_vm(instance, address, context)
+            address = net.add_flaoting_ip_to_vm(uid, attributes, context)
 
-        # remove the mixin
-        for mixin in entity.mixins:
-            if (mixin.scheme + mixin.term) == OS_FLOATING_IP_EXT.scheme + \
-                                                    OS_FLOATING_IP_EXT.term:
-                entity.mixins.remove(mixin)
-                entity.attributes.pop('org.openstack.network.floating.ip')
+            # once the address is allocated we need to reflect that fact
+            # on the resource holding it.
+            entity.mixins.append(OS_FLOATING_IP_EXT)
+            entity.attributes['org.openstack.network.floating.ip'] = address
+        elif action == OS_DEALLOC_FLOATING_IP:
+            address = entity.attributes['org.openstack.network.floating.ip']
+            net.remove_floating_ip(uid, address, context)
+
+            # remove the mixin
+            for mixin in entity.mixins:
+                if (mixin.scheme + mixin.term) == OS_FLOATING_IP_EXT.scheme +\
+                                                  OS_FLOATING_IP_EXT.term:
+                    entity.mixins.remove(mixin)
+                    entity.attributes.pop('org.openstack.network.floating.ip')
+        else:
+            raise AttributeError('Not an applicable action.')

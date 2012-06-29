@@ -17,6 +17,8 @@
 
 import random
 
+from nova_glue import security
+
 from occi import backend
 from occi import core_model
 
@@ -24,8 +26,6 @@ from occi import core_model
 # TODO(dizz): Remove SSH Console and VNC Console once URI support is added to
 #             pyssf
 
-####################### OCCI Candidate Spec Additions ########################
-from api import nova_glue
 
 def get_extensions():
     return [
@@ -125,21 +125,17 @@ class SecurityGroupBackend(backend.UserDefinedMixinBackend):
         group_description = (category.title.strip()
                                             if category.title else group_name)
 
-        nova_glue.create_security_group(group_name, group_description, context)
+        security.create_group(group_name, group_description, context)
 
     def destroy(self, category, extras):
         """
         Deletes the specified security group.
         """
         context = extras['nova_ctx']
-        security_group = self._get_sec_group(extras, category)
-        nova_glue.remove_security_group(security_group, context)
-
-    def _get_sec_group(self, extras, sec_mixin):
-        """
-        Retreive the security group by name associated with the security mixin.
-        """
-        return nova_glue.retrieve_sec_group(sec_mixin, extras)
+        security_group = security.retrieve_group(category.term,
+                                                 extras['nova_ctx'].project_id,
+                                                 extras)
+        security.remove_group(security_group, context)
 
 
 class SecurityRuleBackend(backend.KindBackend):
@@ -150,100 +146,108 @@ class SecurityRuleBackend(backend.KindBackend):
         The group to add the rule to must exist.
         In OCCI-speak this means the mixin must be supplied with the request
         """
-        sec_mixin = self._get_sec_mixin(entity)
-        security_group = nova_glue.retrieve_sec_group(sec_mixin, extras)
-        sg_rule = self._make_sec_rule(entity, security_group['id'])
+        sec_mixin = get_sec_mixin(entity)
+        context = extras['nova_ctx']
+        security_group = security.retrieve_group(sec_mixin.term,
+                                                 extras['nova_ctx']
+                                                 .project_id, context)
+        sg_rule = make_sec_rule(entity, security_group['id'])
 
-        if self._security_group_rule_exists(security_group, sg_rule):
+        if security_group_rule_exists(security_group, sg_rule):
             #This rule already exists in group
             msg = ('This rule already exists in group. %s') % \
                                                         str(security_group)
             raise AttributeError(msg)
 
-        nova_glue.create_security_rule(sg_rule, extras['nova_ctx'])
-
-    def _make_sec_rule(self, entity, sec_grp_id):
-        """
-        Create and validate the security rule.
-        """
-        sg_rule = {'id': random.randrange(0, 99999999)}
-        entity.attributes['occi.core.id'] = str(sg_rule['id'])
-        sg_rule['parent_group_id'] = sec_grp_id
-        prot = \
-            entity.attributes['occi.network.security.protocol'].lower().strip()
-        if prot in ('tcp', 'udp', 'icmp'):
-            sg_rule['protocol'] = prot
-        else:
-            raise AttributeError('Invalid protocol defined.')
-        from_p = entity.attributes['occi.network.security.to'].strip()
-        from_p = int(from_p)
-        if (type(from_p) is int) and 0 < from_p <= 65535:
-            sg_rule['from_port'] = from_p
-        else:
-            raise AttributeError('No valid from port defined.')
-        to_p = entity.attributes['occi.network.security.to'].strip()
-        to_p = int(to_p)
-        if (type(to_p) is int) and 0 < to_p <= 65535:
-            sg_rule['to_port'] = to_p
-        else:
-            raise AttributeError('No valid to port defined.')
-        if from_p > to_p:
-            raise AttributeError('From port is bigger than to port defined.')
-        cidr = entity.attributes['occi.network.security.range'].strip()
-        if len(cidr) <= 0:
-            cidr = '0.0.0.0/0'
-        # TODO(dizz): find corresponding call in master!
-        #if utils.is_valid_cidr(cidr):
-        if True:
-            sg_rule['cidr'] = cidr
-        else:
-            raise AttributeError('No valid CIDR defined.')
-        sg_rule['group'] = {}
-        return sg_rule
-
-    def _get_sec_mixin(self, entity):
-        """
-        Get the security mixin of the supplied entity.
-        """
-        sec_mixin_present = 0
-        sec_mixin = None
-        for mixin in entity.mixins:
-            if SEC_GROUP in mixin.related:
-                sec_mixin = mixin
-                sec_mixin_present += 1
-
-        if not sec_mixin_present:
-            # no mixin of the type security group was found
-            msg = 'No security group mixin was found'
-            raise AttributeError(msg)
-        if sec_mixin_present > 1:
-            msg = 'More than one security group mixin was found'
-            raise AttributeError(msg)
-
-        return sec_mixin
-
-    def _security_group_rule_exists(self, security_group, values):
-        """
-        Indicates whether the specified rule values are already
-        defined in the given security group.
-        """
-        # Taken directly from security_groups.py as that method is not
-        # directly import-able.
-        for rule in security_group['rules']:
-            is_duplicate = True
-            keys = ('group_id', 'cidr', 'from_port', 'to_port', 'protocol')
-            for key in keys:
-                if rule.get(key) != values.get(key):
-                    is_duplicate = False
-                    break
-            if is_duplicate:
-                return True
-        return False
+        security.create_rule(sg_rule, context)
 
     def delete(self, entity, extras):
         """
         Deletes the security rule.
         """
-        rule = nova_glue.retrieve_security_rule(entity, extras)
+        context = extras['nova_ctx']
+        rule = security.get_rule(entity.attributes['occi.core.id'], context)
 
-        nova_glue.remove_security_rule(rule, extras)
+        security.remove_rule(rule, context)
+
+
+def make_sec_rule(entity, sec_grp_id):
+    """
+    Create and validate the security rule.
+    """
+    nm = random.randrange(0, 99999999)
+    sg_rule = {'id': nm}
+    entity.attributes['occi.core.id'] = str(sg_rule['id'])
+    sg_rule['parent_group_id'] = sec_grp_id
+    prot =\
+    entity.attributes['occi.network.security.protocol'].lower().strip()
+    if prot in ('tcp', 'udp', 'icmp'):
+        sg_rule['protocol'] = prot
+    else:
+        raise AttributeError('Invalid protocol defined.')
+    from_p = entity.attributes['occi.network.security.to'].strip()
+    from_p = int(from_p)
+    if (type(from_p) is int) and 0 < from_p <= 65535:
+        sg_rule['from_port'] = from_p
+    else:
+        raise AttributeError('No valid from port defined.')
+    to_p = entity.attributes['occi.network.security.to'].strip()
+    to_p = int(to_p)
+    if (type(to_p) is int) and 0 < to_p <= 65535:
+        sg_rule['to_port'] = to_p
+    else:
+        raise AttributeError('No valid to port defined.')
+    if from_p > to_p:
+        raise AttributeError('From port is bigger than to port defined.')
+    cidr = entity.attributes['occi.network.security.range'].strip()
+    if len(cidr) <= 0:
+        cidr = '0.0.0.0/0'
+        # TODO(dizz): find corresponding call in master!
+    #if utils.is_valid_cidr(cidr):
+    if True:
+        sg_rule['cidr'] = cidr
+    else:
+        raise AttributeError('No valid CIDR defined.')
+    sg_rule['group'] = {}
+    return sg_rule
+
+
+def get_sec_mixin(entity):
+    """
+    Get the security mixin of the supplied entity.
+    """
+    sec_mixin_present = 0
+    sec_mixin = None
+    for mixin in entity.mixins:
+        if SEC_GROUP in mixin.related:
+            sec_mixin = mixin
+            sec_mixin_present += 1
+
+    if not sec_mixin_present:
+        # no mixin of the type security group was found
+        msg = 'No security group mixin was found'
+        raise AttributeError(msg)
+    if sec_mixin_present > 1:
+        msg = 'More than one security group mixin was found'
+        raise AttributeError(msg)
+
+    return sec_mixin
+
+
+def security_group_rule_exists(security_group, values):
+    """
+    Indicates whether the specified rule values are already
+    defined in the given security group.
+    """
+    # Taken directly from security_groups.py as that method is not
+    # directly import-able.
+    for rule in security_group['rules']:
+        is_duplicate = True
+        keys = ('group_id', 'cidr', 'from_port', 'to_port', 'protocol')
+        for key in keys:
+            if rule.get(key) != values.get(key):
+                is_duplicate = False
+                break
+        if is_duplicate:
+            return True
+    return False
