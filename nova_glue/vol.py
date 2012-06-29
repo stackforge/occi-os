@@ -23,6 +23,7 @@ from nova import volume
 from occi import exceptions
 
 # Connection to the nova APIs
+from nova_glue import vm
 
 volume_api = volume.API()
 
@@ -99,7 +100,7 @@ def snapshot_storage_instance(uid, name, description, context):
     volume_api.create_snapshot(context, instance, name, description)
 
 
-def get_image_architecture(instance, context):
+def get_image_architecture(uid, context):
     """
     Extract architecture from either:
     - image name, title or metadata. The architecture is sometimes
@@ -107,7 +108,12 @@ def get_image_architecture(instance, context):
     - db::glance::image_properties could be used reliably so long as the
       information is supplied when registering an image with glance.
     - else return a default of x86
+
+    uid -- id of the instance!
+    context -- The os context.
     """
+    instance = vm._get_vm(uid, context)
+
     arch = ''
     id = instance['image_ref']
     img = image_api.show(context, id)
@@ -123,7 +129,7 @@ def get_image_architecture(instance, context):
     return arch
 
 
-def _get_volume(uid, context):
+def get_storage(uid, context):
     """
     Retrieve an Volume instance from nova.
 

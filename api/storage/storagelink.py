@@ -18,12 +18,10 @@
 
 import uuid
 
+from nova_glue import vm
+
 from occi import backend
 from occi.extensions import infrastructure
-from webob import exc
-
-from api import nova_glue
-
 
 class StorageLinkBackend(backend.KindBackend):
     """
@@ -36,11 +34,11 @@ class StorageLinkBackend(backend.KindBackend):
         The user must specify what the device id is to be.
         """
         context = extras['nova_ctx']
-        instance_id = get_inst_to_attach(link, context)
-        volume_id = get_vol_to_attach(link, context)
+        instance_id = get_inst_to_attach(link)
+        volume_id = get_vol_to_attach(link)
         mount_point = link.attributes['occi.storagelink.deviceid']
 
-        nova_glue.attach_volume(instance_id, volume_id, mount_point, context)
+        vm.attach_volume(instance_id, volume_id, mount_point, context)
 
         link.attributes['occi.core.id'] = str(uuid.uuid4())
         link.attributes['occi.storagelink.deviceid'] = \
@@ -53,7 +51,7 @@ class StorageLinkBackend(backend.KindBackend):
         Unlinks the the compute from the storage resource.
         """
         volume_id = get_vol_to_attach(link)
-        nova_glue.detach_volume(volume_id, extras['nova_ctx'])
+        vm.detach_volume(volume_id, extras['nova_ctx'])
 
 # HELPERS
 
@@ -62,7 +60,6 @@ def get_inst_to_attach(link):
     """
     Gets the compute instance that is to have the storage attached.
     """
-    uid = ''
     if link.target.kind == infrastructure.COMPUTE:
         uid = link.target.attributes['occi.core.id']
     elif link.source.kind == infrastructure.COMPUTE:
@@ -76,7 +73,6 @@ def get_vol_to_attach(link):
     """
     Gets the storage instance that is to have the compute attached.
     """
-    uid = ''
     if link.target.kind == infrastructure.STORAGE:
         uid = link.target.attributes['occi.core.id']
     elif link.source.kind == infrastructure.STORAGE:

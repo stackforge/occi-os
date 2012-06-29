@@ -42,5 +42,3 @@ class ResourceTemplate(core_model.Mixin):
     """
     pass
 
-RES_TEMPLATE = ResourceTemplate('http://schemas.ogf.org/occi/infrastructure#',
-                                                                'resource_tpl')

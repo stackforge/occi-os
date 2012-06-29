@@ -15,11 +15,11 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from occi import backend
-from occi.extensions import infrastructure
-from webob import exc
 
-from api import nova_glue
+from occi import backend
+from occi import exceptions
+from occi.extensions import infrastructure
+from nova_glue import vol
 
 
 class StorageBackend(backend.KindBackend, backend.ActionBackend):
@@ -33,18 +33,18 @@ class StorageBackend(backend.KindBackend, backend.ActionBackend):
         """
         context = extras['nova_ctx']
         if 'occi.storage.size' not in entity.attributes:
-            exc.HTTPBadRequest()
+            raise AttributeError('size attribute not found!')
 
-        new_volume = nova_glue.create_storage(entity, context)
+        new_volume = vol.create_storage(entity, context)
+        vol_id = new_volume['id']
 
         # Work around problem that instance is lazy-loaded...
-        new_volume = nova_glue.get_storage_instance(new_volume['id'], context)
+        new_volume = vol.get_storage(vol_id, context)
 
         if new_volume['status'] == 'error':
-            msg = 'There was an error creating the volume'
-            raise exc.HTTPServerError(msg)
-
-        entity.attributes['occi.core.id'] = str(new_volume['id'])
+            raise exceptions.HTTPError(500, 'There was an error creating the '
+                                       'volume')
+        entity.attributes['occi.core.id'] = str(vol_id)
 
         if new_volume['status'] == 'available':
             entity.attributes['occi.storage.state'] = 'online'
@@ -59,16 +59,39 @@ class StorageBackend(backend.KindBackend, backend.ActionBackend):
         """
         v_id = int(entity.attributes['occi.core.id'])
 
-        vol = nova_glue.get_storage_instance(v_id, extras['nova_ctx'])
+        volume = vol.get_storage(v_id, extras['nova_ctx'])
 
-        entity.attributes['occi.storage.size'] = str(float(vol['size']))
+        entity.attributes['occi.storage.size'] = str(float(volume['size']))
 
         # OS volume states:
         #       available, creating, deleting, in-use, error, error_deleting
-        if vol['status'] == 'available' or vol['status'] == 'in-use':
+        if volume['status'] == 'available' or volume['status'] == 'in-use':
             entity.attributes['occi.storage.state'] = 'online'
             entity.actions = [infrastructure.OFFLINE, infrastructure.BACKUP,
                               infrastructure.SNAPSHOT, infrastructure.RESIZE]
+
+    def update(self, old, new, extras):
+        """
+        Updates simple attributes of a storage resource:
+        occi.core.title, occi.core.summary
+        """
+        # update attributes.
+        if len(new.attributes) > 0:
+            # support only title and summary changes now.
+            if (('occi.core.title' in new.attributes)
+                or ('occi.core.title' in new.attributes)):
+                if len(new.attributes['occi.core.title']) > 0:
+                    old.attributes['occi.core.title'] =\
+                    new.attributes['occi.core.title']
+
+                if len(new.attributes['occi.core.summary']) > 0:
+                    old.attributes['occi.core.summary'] =\
+                    new.attributes['occi.core.summary']
+            else:
+                raise AttributeError('Cannot update the supplied attributes.')
+
+    def replace(self, old, new, extras):
+        pass
 
     def delete(self, entity, extras):
         """
@@ -77,8 +100,7 @@ class StorageBackend(backend.KindBackend, backend.ActionBackend):
         context = extras['nova_ctx']
         volume_id = int(entity.attributes['occi.core.id'])
 
-        vol = nova_glue.get_storage_instance(volume_id, context)
-        nova_glue.delete_storage_instance(vol, context)
+        vol.delete_storage_instance(volume_id, context)
 
     def action(self, entity, action, attributes, extras):
         """
@@ -97,7 +119,7 @@ class StorageBackend(backend.KindBackend, backend.ActionBackend):
 
             msg = ('Online storage action requested resource with id: %s') % \
                                                             entity.identifier
-            raise exc.HTTPBadRequest(msg)
+            raise AttributeError(msg)
 
         elif action == infrastructure.OFFLINE:
             # OFFLINE, disconnected? disconnection supported in API otherwise
@@ -107,19 +129,24 @@ class StorageBackend(backend.KindBackend, backend.ActionBackend):
             # By default storage cannot be brought OFFLINE
             msg = ('Offline storage action requested for resource: %s') % \
                                                             entity.identifier
-            raise exc.HTTPBadRequest(msg)
+            raise AttributeError(msg)
 
         elif action == infrastructure.BACKUP:
             # BACKUP: create a complete copy of the volume.
             msg = ('Backup action for storage resource with id: %s') % \
                                                             entity.identifier
-            raise exc.HTTPBadRequest(msg)
+            raise AttributeError(msg)
 
         elif action == infrastructure.SNAPSHOT:
             # CDMI?!
             # SNAPSHOT: create a time-stamped copy of the volume? Supported in
             # OS volume API
-            self._snapshot_storage(entity, extras)
+            volume_id = int(entity.attributes['occi.core.id'])
+            # occi.core.title, occi.core.summary
+            name = 'snapshot name'
+            description = 'snapshot description'
+            vol.snapshot_storage_instance(volume_id, name, description,
+                                          extras['nova_ctx'])
 
         elif action == infrastructure.RESIZE:
             # TODO(dizz): not supported by API. A blueprint candidate?
@@ -128,48 +155,5 @@ class StorageBackend(backend.KindBackend, backend.ActionBackend):
 
             msg = ('Resize storage actio requested resource with id: %s') % \
                                                             entity.identifier
-            raise exc.HTTPNotImplemented(msg)
+            raise AttributeError(msg)
 
-    def _snapshot_storage(self, entity, extras, backup=False):
-        """
-        Takes a snapshot of the specified storage resource
-        """
-        context = extras['nova_ctx']
-
-        volume_id = int(entity.attributes['occi.core.id'])
-        vol = nova_glue.get_storage_instance(volume_id, context)
-        #TODO(dizz): these names/descriptions should be made better.
-        if backup:
-            name = 'backup name'
-            description = 'backup description'
-        else:
-            # occi.core.title, occi.core.summary
-            name = 'snapshot name'
-            description = 'snapshot description'
-        nova_glue.snapshot_storage_instance(vol, name, description, context)
-
-    def update(self, old, new, extras):
-        """
-        Updates simple attributes of a storage resource:
-        occi.core.title, occi.core.summary
-        """
-        # update attributes.
-        if len(new.attributes) > 0:
-            # support only title and summary changes now.
-            if (('occi.core.title' in new.attributes)
-                                    or ('occi.core.title' in new.attributes)):
-                if len(new.attributes['occi.core.title']) > 0:
-                    old.attributes['occi.core.title'] = \
-                                            new.attributes['occi.core.title']
-
-                if len(new.attributes['occi.core.summary']) > 0:
-                    old.attributes['occi.core.summary'] = \
-                                            new.attributes['occi.core.summary']
-            else:
-                msg = 'Cannot update the supplied attributes.'
-                raise exc.HTTPBadRequest(explanation=msg)
-        else:
-            raise exc.HTTPBadRequest()
-
-    def replace(self, old, new, extras):
-        pass
