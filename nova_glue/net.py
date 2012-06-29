@@ -30,7 +30,7 @@ from nova_glue import vm
 
 NETWORK_API = network.API()
 
-LOG = logging.getLogger()
+LOG = logging.getLogger('nova.api.wsgi.occi.nova_glue.net')
 
 
 def get_adapter_info(uid, context):
@@ -97,7 +97,7 @@ def add_flaoting_ip_to_vm(uid, attributes, context):
     else:
         pool = attributes['org.openstack.network.floating.pool']
 
-    address = NETWORK_API.allocate_floating_ip(context, pool)
+    float_address = NETWORK_API.allocate_floating_ip(context, pool)
 
     if len(fixed_ips) > 1:
         LOG.warn('multiple fixed_ips exist, using the first')
@@ -105,7 +105,7 @@ def add_flaoting_ip_to_vm(uid, attributes, context):
     try:
         address = fixed_ips[0]['address']
         NETWORK_API.associate_floating_ip(context, vm_instance,
-                                          floating_address=address,
+                                          floating_address=float_address,
                                           fixed_address=address)
     except exception.FloatingIpAssociated:
         msg = 'floating ip is already associated'
@@ -113,10 +113,10 @@ def add_flaoting_ip_to_vm(uid, attributes, context):
     except exception.NoFloatingIpInterface:
         msg = 'l3driver call to add floating ip failed'
         raise AttributeError(msg)
-    except Exception:
-        msg = 'Error. Unable to associate floating ip'
+    except Exception as error:
+        msg = 'Error. Unable to associate floating ip' + str(error)
         raise AttributeError(msg)
-    return address
+    return float_address
 
 
 def remove_floating_ip(uid, address, context):

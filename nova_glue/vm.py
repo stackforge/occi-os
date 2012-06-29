@@ -25,15 +25,13 @@ from api.compute import templates
 from api.extensions import occi_future
 from api.extensions import openstack
 
-from nova import compute
+from nova import compute, volume
 from nova import exception
 from nova import utils
 from nova.compute import vm_states
 from nova.compute import task_states
 from nova.compute import instance_types
 from nova.flags import FLAGS
-
-from nova_glue import vol
 
 from occi import exceptions
 from occi.extensions import infrastructure
@@ -43,8 +41,9 @@ import logging
 # Connection to the nova APIs
 
 COMPUTE_API = compute.API()
+VOLUME_API = volume.API()
 
-LOG = logging.getLogger()
+LOG = logging.getLogger('openstackocci.nova_glue.vm')
 
 
 def create_vm(entity, context):
@@ -331,7 +330,11 @@ def attach_volume(instance_id, volume_id, mount_point, context):
     """
     # TODO: check exception handling!
     instance = get_vm(instance_id, context)
-    volume_id = vol.get_storage(volume_id, context)[0]
+    try:
+        instance = VOLUME_API.get(context, volume_id)
+    except exception.NotFound:
+        raise exceptions.HTTPError(404, 'Volume not found!')
+    volume_id = instance[0]
 
     COMPUTE_API.attach_volume(
         context,
@@ -347,7 +350,11 @@ def detach_volume(volume_id, context):
     volume_id -- Id of the volume.
     context -- the os context.
     """
-    volume_id = vol._get_volume(volume_id, context)[0]
+    try:
+        instance = VOLUME_API.get(context, volume_id)
+    except exception.NotFound:
+        raise exceptions.HTTPError(404, 'Volume not found!')
+    volume_id = instance[0]
 
     COMPUTE_API.detach_volumne(context, volume_id)
 

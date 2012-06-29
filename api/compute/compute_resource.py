@@ -304,6 +304,8 @@ def set_console_info(entity, uid, extras):
 
     if not vnc_console_present:
         console = vm.get_vnc(uid, extras['nova_ctx'])
+        if console is None:
+            return
 
         identifier = str(uuid.uuid4())
         vnc_console = core_model.Resource(

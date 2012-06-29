@@ -26,7 +26,7 @@ from setuptools import setup
 
 
 setup(
-    name='occi-os',
+    name='openstackocci',
     version='1.1',
     description='OCCI interface for Openstack.',
     long_description='''
@@ -50,7 +50,6 @@ setup(
     zip_safe=False,
     install_requires=[
         'setuptools',
-        'pyssf', "occi"
         ],
     entry_points='''
       [paste.app_factory]

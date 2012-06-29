@@ -22,12 +22,13 @@ OCCI registry
 #R0201:method could be func.E1002:old style obj
 #pylint: disable=R0201,E1002
 
-from occi import registry
+from occi import registry as occi_registry
+from api.compute import openstack
 
 from api.extensions import occi_future
 
 
-class OCCIRegistry(registry.NonePersistentRegistry):
+class OCCIRegistry(occi_registry.NonePersistentRegistry):
     """
     Registry for OpenStack.
     """
@@ -74,7 +75,7 @@ class OCCIRegistry(registry.NonePersistentRegistry):
         """
         if (hasattr(category, 'related') and
                                     occi_future.SEC_GROUP in category.related):
-            backend = occi_future.SecurityGroupBackend()
+            backend = openstack.SecurityGroupBackend()
             backend = backend
             backend.init_sec_group(category, extras)
 

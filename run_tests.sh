@@ -7,7 +7,7 @@ mkdir build/html
 echo '\n PyLint report \n****************************************\n'
 
 #pylint -d I0011 -i y -f html api tests >> build/html/lint.html
-pylint -d I0011,E1101,E0611,F0401 -i y --report no *
+pylint -d W0511,I0011,E1101,E0611,F0401 -i y --report no *
 
 echo '\n Unittest coverage \n****************************************\n'
 

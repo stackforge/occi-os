@@ -19,36 +19,11 @@
 Set of extensions to get OCCI work with OpenStack.
 """
 
-#W0232:has no __init__ method,R0912:Too many branches (13/12),
-# R0201:Method could be a function,R0903:too few public methods.
 #pylint: disable=W0232,R0912,R0201,R0903
 
-from occi import backend
 from occi import core_model
-from nova_glue import vm, net
 
 
-def get_extensions():
-    """
-    Retrieve the OS specific extensions.
-    """
-
-    return  [
-             {
-              'categories': [OS_CHG_PWD, OS_REVERT_RESIZE,
-                            OS_CONFIRM_RESIZE, OS_CREATE_IMAGE,
-                            OS_ALLOC_FLOATING_IP, OS_DEALLOC_FLOATING_IP, ],
-              'handler': OsComputeActionBackend(),
-             },
-             {
-              'categories': [OS_KEY_PAIR_EXT, OS_ADMIN_PWD_EXT,
-                            OS_ACCESS_IP_EXT, OS_FLOATING_IP_EXT, ],
-              'handler': backend.MixinBackend(),
-             },
-            ]
-
-
-##### 2. define the extension categories - OpenStack Specific Additions ######
 # OS change adminstrative password action
 _OS_CHG_PWD_ATTRIBUTES = {'org.openstack.credentials.admin_pwd': '', }
 OS_CHG_PWD = core_model.Action(
@@ -121,65 +96,3 @@ _OS_FLOATING_IP_ATTRIBUTES = {'org.openstack.network.floating.ip': '', }
 OS_FLOATING_IP_EXT = core_model.Mixin(
     'http://schemas.openstack.org/instance/network#',
     'floating_ip', attributes=_OS_FLOATING_IP_ATTRIBUTES)
-
-
-##################### 3. define the extension handler(s) #####################
-class OsComputeActionBackend(backend.ActionBackend):
-    """
-    The OpenStackCompute backend.
-    """
-
-    def action(self, entity, action, attributes, extras):
-        """
-        This is called by pyssf when an action request is issued.
-        """
-        context = extras['nova_ctx']
-        uid = entity.attributes['occi.core.id']
-
-        if action == OS_CHG_PWD:
-            if 'org.openstack.credentials.admin_pwd' not in attributes:
-                msg = 'org.openstack.credentials.admin_pwd was not supplied' \
-                      ' in the request.'
-                raise AttributeError(msg)
-
-            new_password = attributes['org.openstack.credentials.admin_pwd']
-            vm.set_password_for_vm(uid, new_password, context)
-        elif action == OS_REVERT_RESIZE:
-            vm.revert_resize_vm(uid, context)
-            entity.attributes['occi.compute.state'] = 'inactive'
-        elif action == OS_CONFIRM_RESIZE:
-            vm.confirm_resize_vm(uid, context)
-            entity.attributes['occi.compute.state'] = 'active'
-        elif action == OS_CREATE_IMAGE:
-            if 'org.openstack.snapshot.image_name' not in attributes:
-                raise AttributeError('Missing image name')
-
-            image_name = attributes['org.openstack.snapshot.image_name']
-            vm.snapshot_vm(uid, image_name, context)
-        elif action == OS_ALLOC_FLOATING_IP:
-            for mixin in entity.mixins:
-                if (mixin.scheme + mixin.term) == OS_FLOATING_IP_EXT.scheme +\
-                                                  OS_FLOATING_IP_EXT.term:
-                    #TODO(dizz): implement support for multiple floating ips
-                    #            needs support in pyssf for URI in link
-                    raise AttributeError('There is already a floating IP '
-                                         'assigned to the VM')
-
-            address = net.add_flaoting_ip_to_vm(uid, attributes, context)
-
-            # once the address is allocated we need to reflect that fact
-            # on the resource holding it.
-            entity.mixins.append(OS_FLOATING_IP_EXT)
-            entity.attributes['org.openstack.network.floating.ip'] = address
-        elif action == OS_DEALLOC_FLOATING_IP:
-            address = entity.attributes['org.openstack.network.floating.ip']
-            net.remove_floating_ip(uid, address, context)
-
-            # remove the mixin
-            for mixin in entity.mixins:
-                if (mixin.scheme + mixin.term) == OS_FLOATING_IP_EXT.scheme +\
-                                                  OS_FLOATING_IP_EXT.term:
-                    entity.mixins.remove(mixin)
-                    entity.attributes.pop('org.openstack.network.floating.ip')
-        else:
-            raise AttributeError('Not an applicable action.')

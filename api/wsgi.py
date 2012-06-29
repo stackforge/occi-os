@@ -34,8 +34,7 @@ from nova.network import api
 from nova.openstack.common import cfg
 
 from api import registry
-from api import extensions
-from api.compute import compute_resource
+from api.compute import compute_resource, openstack
 from api.compute import templates
 from api.extensions import occi_future
 from api.network import networklink
@@ -48,7 +47,7 @@ from occi import core_model
 from occi import wsgi as occi_wsgi
 from occi.extensions import infrastructure
 
-LOG = logging.getLogger('nova.api.occi.wsgi')
+LOG = logging.getLogger('nova.api.wsgi.occi')
 
 #Setup options
 OCCI_OPTS = [
@@ -140,13 +139,12 @@ class OCCIApplication(occi_wsgi.Application, wsgi.Application):
         """
         Register OCCI extensions contained within the 'extension' package.
         """
-        #EXTENSIONS is a list of hashmaps. The hashmap contains the handler.
-        #The hashmap contains a list of categories to be handled by the handler
-        for extn in extensions.EXTENSIONS:
-            #miaow! kittens, kittens, kittens!
-            for ext in extn:
-                for cat in ext['categories']:
-                    self.register_backend(cat, ext['handler'])
+
+        extensions = openstack.get_extensions()
+        for item in extensions:
+            for cat in item['categories']:
+                LOG.warn('adding:' + str(cat) + str(item['handler']))
+                self.register_backend(cat, item['handler'])
 
     def __call__(self, environ, response):
         """

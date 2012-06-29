@@ -18,39 +18,3 @@
 """
 A package containing extensions for OCCI.
 """
-
-#W0122:use of exev
-#pylint: disable=W0122
-
-import os
-
-import logging
-
-LOG = logging.getLogger()
-EXTENSIONS = []
-
-
-def load_extensions():
-    """
-    Loads compliant extensions found within the extensions module.
-    See README.rst for details on extensions.
-    """
-    pth = __file__.rpartition(os.sep)
-    pth = pth[0] + pth[1]
-
-    # Walkthrough the extensions directory
-    msg = 'Loading the following extensions...'
-    LOG.info(msg)
-    for _dirpath, _dirnames, filenames in os.walk(pth):
-        for filename in filenames:
-            if (filename.endswith('.py') and
-                                        not filename.startswith('__init__')):
-                mod = filename.split('.py')[0]
-                exec('from %s import %s' % (__package__, mod))
-                extn = eval(mod).get_extensions()
-                EXTENSIONS.append(extn)
-                msg = ('Loading occi extension: %s') % extn
-                LOG.info(msg)
-
-
-load_extensions()
