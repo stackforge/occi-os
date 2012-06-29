@@ -43,9 +43,3 @@ You can set the port option via the `nova.conf` configuration file:
     occiapi_listen_port=9999
     [...]
 
-
-### For development
-
-Make sure the nova compute api is in the path for Python and if you wanna test the app run:
-
-	paster serve api-paste.ini --reload
