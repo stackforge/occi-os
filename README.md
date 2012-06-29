@@ -27,7 +27,7 @@ Make sure an application is configured in api-paste.ini (name can be picked your
 	# pipeline = sizelimit authtoken keystonecontext ratelimit occiapp
 
 	[app:occiapp]
-	use = egg:occi-os#occi_app
+	use = egg:openstackocci#occi_app
 
 Make sure the API (name from above) is enabled in nova.conf:
 
@@ -37,18 +37,7 @@ Make sure the API (name from above) is enabled in nova.conf:
 	
 #### Hacking the port number
 
-Currently nova compute will start the OCCI API on a random port. If you want to have it on a predefined port you will need to edit the 'flags.py' file in <path to nova>/nova/:
-
-    cfg.ListOpt('enabled_apis',
-               default=['occiapi', 'ec2', 'osapi_compute', 'osapi_volume', 'metadata'],
-               help='a list of APIs to enable by default'),
-    cfg.IntOpt('occiapi_listen_port',
-               default=8787,
-               help='the port for external test apps'),
-
-Again the name you provide here should be identical to the name of the app you provided above (In this case 'occiapi')!
-
-After adding the 'listen_port' option in 'flags.py' you can also set the port option via the `nova.conf` configuration file:
+You can set the port option via the `nova.conf` configuration file:
 
     [...]
     occiapi_listen_port=9999
