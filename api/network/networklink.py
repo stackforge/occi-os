@@ -16,7 +16,6 @@
 #    under the License.
 
 from occi import backend
-from webob import exc
 
 # With Quantum:
 #     TODO(dizz): implement create - note: this must handle either
@@ -37,7 +36,7 @@ class NetworkInterfaceBackend(backend.KindBackend):
         As nova does not support creation of L2 networks we don't.
         """
         # implement with Quantum
-        raise exc.HTTPBadRequest()
+        raise AttributeError('Currenlty not supported.')
 
     def update(self, old, new, extras):
         """
@@ -51,13 +50,7 @@ class NetworkInterfaceBackend(backend.KindBackend):
         # get the security group
         # associate the security group with the compute instance
 
-        raise exc.HTTPBadRequest()
-
-    def delete(self, link, extras):
-        """
-        no-op
-        """
-        pass
+        raise AttributeError('Currently not supported.')
 
 
 class IpNetworkInterfaceBackend(backend.MixinBackend):
@@ -68,16 +61,4 @@ class IpNetworkInterfaceBackend(backend.MixinBackend):
         """
         Can't create in nova so we don't either.
         """
-        raise exc.HTTPBadRequest()
-
-    def delete(self, entity, extras):
-        """
-        no-op
-        """
-        pass
-
-    def action(self):
-        """
-        no-op
-        """
-        pass
+        raise AttributeError('Currently not supported.')

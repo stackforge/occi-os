@@ -25,29 +25,25 @@
 # Also see nova/api/openstack/compute/contrib/networks.py
 
 from occi import backend
-from webob import exc
 
 
 class NetworkBackend(backend.KindBackend, backend.ActionBackend):
     """
     Backend to handle network resources.
     """
-    def create(self, entity, extras):
-        raise exc.HTTPBadRequest()
 
-    def delete(self, entity, extras):
-        pass
+    def create(self, entity, extras):
+        raise AttributeError('Currenlty not supported.')
 
     def action(self, entity, action, attributes, extras):
-        raise exc.HTTPBadRequest()
+        raise AttributeError('Currenlty not supported.')
 
 
 class IpNetworkBackend(backend.MixinBackend):
     """
     A mixin backend for the IPnetworking.
     """
-    def create(self, entity, extras):
-        raise exc.HTTPBadRequest()
 
-    def delete(self, entity, extras):
-        pass
+    def create(self, entity, extras):
+        raise AttributeError('Currenlty not supported.')
+
