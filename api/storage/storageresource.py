@@ -40,7 +40,8 @@ class StorageBackend(backend.KindBackend, backend.ActionBackend):
         if 'occi.storage.size' not in entity.attributes:
             raise AttributeError('size attribute not found!')
 
-        new_volume = vol.create_storage(entity, context)
+        new_volume = vol.create_storage(entity.attributes['occi.storage' \
+                                                          '.size'], context)
         vol_id = new_volume['id']
 
         # Work around problem that instance is lazy-loaded...
@@ -62,7 +63,7 @@ class StorageBackend(backend.KindBackend, backend.ActionBackend):
         Gets a representation of the storage volume and presents it ready for
         rendering by pyssf.
         """
-        v_id = int(entity.attributes['occi.core.id'])
+        v_id = entity.attributes['occi.core.id']
 
         volume = vol.get_storage(v_id, extras['nova_ctx'])
 

@@ -331,10 +331,10 @@ def attach_volume(instance_id, volume_id, mount_point, context):
     # TODO: check exception handling!
     instance = get_vm(instance_id, context)
     try:
-        instance = VOLUME_API.get(context, volume_id)
+        vol_instance = VOLUME_API.get(context, volume_id)
     except exception.NotFound:
         raise exceptions.HTTPError(404, 'Volume not found!')
-    volume_id = instance[0]
+    volume_id = vol_instance[0]
 
     COMPUTE_API.attach_volume(
         context,
@@ -491,11 +491,5 @@ def get_occi_state(uid, context):
             # rebuild server - OS
             # resize server confirm rebuild
             # revert resized server - OS (indirectly OCCI)
-    elif instance['vm_state'] in [vm_states.RESIZED, vm_states.BUILDING,
-                                  task_states.RESIZE_CONFIRMING,
-                                  task_states.RESIZE_FINISH,
-                                  task_states.RESIZE_MIGRATED,
-                                  task_states.RESIZE_MIGRATING,
-                                  task_states.RESIZE_PREP,
-                                  task_states.RESIZE_REVERTING]:
-        return 'inactive', []
+
+    return 'inactive', []

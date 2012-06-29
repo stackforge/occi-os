@@ -49,10 +49,11 @@ def create_storage(size, context, name=None, description=None):
     # Need to convert float to integer for now and only if the float
     # can be losslessly converted to integer
     # e.g. See nova/quota.py:allowed_volumes(...)
-    if not size.is_integer:
+    if not float(size).is_integer:
         raise AttributeError('Volume sizes cannot be specified as fractional'
                              ' floats.')
-    size = str(int(size))
+    #size = str(int(float(size)))
+    size = int(float(size))
 
     disp_name = ''
     if name is not None:
@@ -64,19 +65,10 @@ def create_storage(size, context, name=None, description=None):
     else:
         disp_descr = disp_name
 
-    snapshot = None
-    # volume_type can be specified by mixin
-    volume_type = None
-    metadata = None
-    avail_zone = None
     new_volume = VOLUME_API.create(context,
                                    size,
                                    disp_name,
-                                   disp_descr,
-                                   snapshot=snapshot,
-                                   volume_type=volume_type,
-                                   metadata=metadata,
-                                   availability_zone=avail_zone)
+                                   disp_descr)
     return new_volume
 
 
