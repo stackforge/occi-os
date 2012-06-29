@@ -31,6 +31,7 @@ from api.compute import templates
 
 LOG = logging.getLogger('api.compute.compute_resource')
 
+
 class ComputeBackend(KindBackend, ActionBackend):
 
     def create(self, entity, extras):
@@ -74,15 +75,17 @@ class ComputeBackend(KindBackend, ActionBackend):
                          openstack.OS_CONFIRM_RESIZE,
                          openstack.OS_CREATE_IMAGE]
 
-
     def retrieve(self, entity, extras):
         uid = entity.attributes['occi.core.id']
-        instance = nova_glue.get_vm_instance(uid, extras['nova_ctx'])
+        context = extras['nova_ctx']
+        instance = nova_glue.get_vm_instance(uid, context)
 
         LOG.debug('Retrieving an Virtual machine: ', uid)
 
         # set state and applicable actions!
-        nova_glue.set_vm_occistate(entity, extras['nova_ctx'])
+        state, actions = nova_glue.get_occi_state(uid, context)
+        entity.attributes['occi.compute.state'] = state
+        entity.actions = actions
 
         # set up to date attributes
         entity.attributes['occi.compute.cores'] = str(instance['vcpus'])
@@ -90,13 +93,14 @@ class ComputeBackend(KindBackend, ActionBackend):
                                                            (instance['memory_mb']) / 1024)
 
         #Now we have the instance state, get its updated network info
-        net_info = nova_glue.get_adapter_info(instance, extras['nova_ctx'])
+        net_info = nova_glue.get_adapter_info(instance, context)
         attach_to_default_network(net_info, entity, extras)
 
         # add consoles and storage links
         set_console_info(entity, instance, extras)
 
     def update(self, old, new, extras):
+        context = extras['nova_ctx']
         uid = old.attributes['occi.core.id']
 
         LOG.debug('Updating an Virtual machine: ', uid)
@@ -112,10 +116,19 @@ class ComputeBackend(KindBackend, ActionBackend):
         # for now we will only handle one mixin change per request
         mixin = new.mixins[0]
         if isinstance(mixin, templates.ResourceTemplate):
-            nova_glue.resize_vm(old, mixin, extras['nova_ctx'])
+            flavor_name = mixin.term
+            nova_glue.resize_vm(uid, flavor_name, context)
+            old.attributes['occi.compute.state'] = 'inactive'
+            # now update the mixin info
+            # TODO(tmetsch): remove old mixin!!!
+            old.mixins.append(mixin)
         elif isinstance(mixin, templates.OsTemplate):
-            # do we need to check for new os rebuild in new?
-            nova_glue.rebuild_vm(old, mixin, extras['nova_ctx'])
+            image_href = mixin.os_id
+            nova_glue.rebuild_vm(uid, image_href, context)
+            old.attributes['occi.compute.state'] = 'inactive'
+            #now update the mixin info
+            # TODO(tmetsch): remove old mixin!!!
+            old.mixins.append(mixin)
         else:
             msg = ('Unrecognised mixin. %s') % str(mixin)
             LOG.error(msg)
@@ -140,17 +153,35 @@ class ComputeBackend(KindBackend, ActionBackend):
         # of computes known by occi, a call to get the latest representation
         # must be made.
         context = extras['nova_ctx']
+        uid = entity.attributes['occi.core.id']
 
         if action not in entity.actions:
-            raise AttributeError("This action is not currently applicable.")
+            raise AttributeError("This action is currently not applicable.")
         elif action == infrastructure.START:
-            nova_glue.start_vm(entity, context)
+            state = entity.attributes['occi.compute.state']
+            nova_glue.start_vm(uid, state, context)
+            entity.attributes['occi.compute.state'] = 'active'
+            entity.actions = [infrastructure.STOP,
+                              infrastructure.SUSPEND,
+                              infrastructure.RESTART,
+                              openstack.OS_REVERT_RESIZE,
+                              openstack.OS_CONFIRM_RESIZE,
+                              openstack.OS_CREATE_IMAGE]
         elif action == infrastructure.STOP:
-            nova_glue.stop_vm(entity, attributes, context)
+            nova_glue.stop_vm(uid, context)
+            entity.attributes['occi.compute.state'] = 'inactive'
+            entity.actions = [infrastructure.START]
         elif action == infrastructure.RESTART:
-            nova_glue.restart_vm(entity, attributes, context)
+            if not 'method' in attributes:
+                raise AttributeError('Please provide a method!')
+            method = attributes['method']
+            nova_glue.restart_vm(uid, method, context)
+            entity.attributes['occi.compute.state'] = 'inactive'
+            entity.actions = []
         elif action == infrastructure.SUSPEND:
-            nova_glue.suspend_vm(entity, attributes, context)
+            nova_glue.suspend_vm(uid, context)
+            entity.attributes['occi.compute.state'] = 'suspended'
+            entity.actions = [infrastructure.START]
 
 # SOME HELPER FUNCTIONS
 
@@ -167,10 +198,14 @@ def attach_to_default_network(vm_net_info, entity, extras):
                 msg = 'A link to the network already exists. Will update ' \
                       'the links attributes.'
                 LOG.debug(msg)
-                link.attributes['occi.networkinterface.interface'] = vm_net_info['vm_iface']
-                link.attributes['occi.networkinterface.address'] = vm_net_info['address']
-                link.attributes['occi.networkinterface.gateway'] = vm_net_info['gateway']
-                link.attributes['occi.networkinterface.mac'] = vm_net_info['mac']
+                link.attributes['occi.networkinterface.interface'] = \
+                vm_net_info['vm_iface']
+                link.attributes['occi.networkinterface.address'] = \
+                vm_net_info['address']
+                link.attributes['occi.networkinterface.gateway'] = \
+                vm_net_info['gateway']
+                link.attributes['occi.networkinterface.mac'] = \
+                vm_net_info['mac']
                 return
 
     # If the network association does not exist...

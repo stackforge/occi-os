@@ -36,12 +36,11 @@ class StorageLinkBackend(backend.KindBackend):
         The user must specify what the device id is to be.
         """
         context = extras['nova_ctx']
-        inst_to_attach = get_inst_to_attach(link, context)
-        vol_to_attach = get_vol_to_attach(link, context)
+        instance_id = get_inst_to_attach(link, context)
+        volume_id = get_vol_to_attach(link, context)
+        mount_point = link.attributes['occi.storagelink.deviceid']
 
-        uid = link.attributes['occi.storagelink.deviceid']
-        nova_glue.attach_volume(inst_to_attach, vol_to_attach['id'], uid,
-                                context)
+        nova_glue.attach_volume(instance_id, volume_id, mount_point, context)
 
         link.attributes['occi.core.id'] = str(uuid.uuid4())
         link.attributes['occi.storagelink.deviceid'] = \
@@ -49,55 +48,39 @@ class StorageLinkBackend(backend.KindBackend):
         link.attributes['occi.storagelink.mountpoint'] = ''
         link.attributes['occi.storagelink.state'] = 'active'
 
-
     def delete(self, link, extras):
         """
         Unlinks the the compute from the storage resource.
         """
-        try:
-            vol_to_detach = get_vol_to_attach(extras['nova_ctx'], link)
-            nova_glue.detach_volume(vol_to_detach['id'], extras['nova_ctx'])
-        except Exception:
-            msg = 'Error in detaching storage volume.'
-            raise AttributeError(msg)
+        volume_id = get_vol_to_attach(link)
+        nova_glue.detach_volume(volume_id, extras['nova_ctx'])
 
 # HELPERS
 
-def get_inst_to_attach(link, context):
+
+def get_inst_to_attach(link):
     """
     Gets the compute instance that is to have the storage attached.
     """
+    uid = ''
     if link.target.kind == infrastructure.COMPUTE:
-        instance = nova_glue.get_vm_instance(link.target.attributes['occi' \
-                                                                    '.core' \
-                                                                    '.id'],
-                                             context)
+        uid = link.target.attributes['occi.core.id']
     elif link.source.kind == infrastructure.COMPUTE:
-        instance = nova_glue.get_vm_instance(link.source.attributes['occi' \
-                                                                    '.core' \
-                                                                    '.id'],
-                                             context)
+        uid = link.source.attributes['occi.core.id']
     else:
-        raise exc.HTTPBadRequest()
-    return instance
+        raise AttributeError('Id of the VM not found!')
+    return uid
 
 
-def get_vol_to_attach(link, context):
+def get_vol_to_attach(link):
     """
     Gets the storage instance that is to have the compute attached.
     """
+    uid = ''
     if link.target.kind == infrastructure.STORAGE:
-        vol_to_attach = nova_glue.get_storage_instance(link.target
-                                                       .attributes['occi' \
-                                                                   '.core' \
-                                                                   '.id'],
-                                                       context)
+        uid = link.target.attributes['occi.core.id']
     elif link.source.kind == infrastructure.STORAGE:
-        vol_to_attach = nova_glue.get_storage_instance(link.source
-                                                       .attributes['occi'\
-                                                                   '.core'\
-                                                                   '.id'],
-                                                       context)
+        uid = link.source.attributes['occi.core.id']
     else:
-        raise exc.HTTPBadRequest()
-    return vol_to_attach
+        raise AttributeError('Id of the Volume not found!')
+    return uid
