@@ -334,6 +334,7 @@ def attach_volume(instance_id, volume_id, mount_point, context):
         vol_instance = VOLUME_API.get(context, volume_id)
     except exception.NotFound:
         raise exceptions.HTTPError(404, 'Volume not found!')
+    print vol_instance, dir(vol_instance)
     volume_id = vol_instance[0]
 
     COMPUTE_API.attach_volume(

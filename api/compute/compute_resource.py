@@ -182,6 +182,12 @@ class ComputeBackend(KindBackend, ActionBackend):
         context = extras['nova_ctx']
         uid = entity.attributes['occi.core.id']
 
+        # set state and applicable actions - so even if the user hasn't done
+        # a GET het can still the most applicable action now...
+        state, actions = vm.get_occi_state(uid, context)
+        entity.attributes['occi.compute.state'] = state
+        entity.actions = actions
+
         if action not in entity.actions:
             raise AttributeError("This action is currently not applicable.")
         elif action == infrastructure.START:
