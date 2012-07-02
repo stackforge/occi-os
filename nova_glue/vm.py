@@ -43,7 +43,7 @@ import logging
 COMPUTE_API = compute.API()
 VOLUME_API = volume.API()
 
-LOG = logging.getLogger('openstackocci.nova_glue.vm')
+LOG = logging.getLogger('nova.api.occi.nova_glue')
 
 
 def create_vm(entity, context):
@@ -246,7 +246,7 @@ def snapshot_vm(uid, image_name, context):
         raise AttributeError('VM is not in an valid state.')
 
 
-def start_vm(uid, state, context):
+def start_vm(uid, context):
     """
     Starts a vm that is in the stopped state. Note, currently we do not
     use the nova start and stop, rather the resume/suspend methods. The
@@ -257,12 +257,8 @@ def start_vm(uid, state, context):
     context -- the os context
     """
     instance = get_vm(uid, context)
-
     try:
-        if state == 'suspended':
-            COMPUTE_API.unpause(context, instance)
-        else:
-            COMPUTE_API.resume(context, instance)
+        COMPUTE_API.resume(context, instance)
     except Exception as error:
         raise exceptions.HTTPError(500, 'Error while starting VM: ' + str
             (error))
@@ -334,14 +330,18 @@ def attach_volume(instance_id, volume_id, mount_point, context):
         vol_instance = VOLUME_API.get(context, volume_id)
     except exception.NotFound:
         raise exceptions.HTTPError(404, 'Volume not found!')
-    print vol_instance, dir(vol_instance)
-    volume_id = vol_instance[0]
+    LOG.debug(str(vol_instance) + ',' + str(dir(vol_instance)))
+    volume_id = vol_instance['id']
 
-    COMPUTE_API.attach_volume(
-        context,
-        instance,
-        volume_id,
-        mount_point)
+    try:
+        COMPUTE_API.attach_volume(
+            context,
+            instance,
+            volume_id,
+            mount_point)
+    except Exception as error:
+        LOG.error(str(error))
+        raise error
 
 
 def detach_volume(volume_id, context):
@@ -454,43 +454,30 @@ def get_occi_state(uid, context):
     context -- the os context.
     """
     instance = get_vm(uid, context)
+    state = 'inactive'
+    actions = []
 
-    if instance['vm_state'] in (vm_states.ACTIVE,
-                                task_states.UPDATING_PASSWORD,
-                                task_states.RESIZE_CONFIRMING):
-        return 'active', [infrastructure.STOP,
-                          infrastructure.SUSPEND,
-                          infrastructure.RESTART,
-                          openstack.OS_CONFIRM_RESIZE,
-                          openstack.OS_REVERT_RESIZE,
-                          openstack.OS_CHG_PWD,
-                          openstack.OS_CREATE_IMAGE]
+    if instance['vm_state'] in [vm_states.ACTIVE,
+                                vm_states.RESIZED]:
+        state = 'active'
+        actions.append(infrastructure.STOP)
+        actions.append(infrastructure.SUSPEND)
+        actions.append(infrastructure.RESTART)
+    elif instance['vm_state'] in [vm_states.BUILDING]:
+        state = 'inactive'
+    elif instance['vm_state'] in [vm_states.PAUSED, vm_states.SUSPENDED,
+                                  vm_states.STOPPED]:
+        state = 'inactive'
+        actions.append(infrastructure.START)
+    elif instance['vm_state'] in [vm_states.RESCUED,
+                                  vm_states.ERROR, vm_states.SOFT_DELETED,
+                                  vm_states.DELETED]:
+        state = 'inactive'
 
-        # reboot server - OS, OCCI
-        # start server - OCCI
-    elif instance['vm_state'] in (task_states.STARTING,
-                                  task_states.POWERING_ON,
-                                  task_states.REBOOTING,
-                                  task_states.REBOOTING_HARD):
-        return 'inactive', []
+    # Some task states require a state
+    # TODO: check for others!
+    if instance['vm_state'] in [task_states.IMAGE_SNAPSHOT]:
+        state = 'inactive'
+        actions = []
 
-        # pause server - OCCI, suspend server - OCCI, stop server - OCCI
-    elif instance['vm_state'] in (task_states.STOPPING,
-                                  task_states.POWERING_OFF):
-        return 'inactive', [infrastructure.START]
-
-        # resume server - OCCI
-    elif instance['vm_state'] in (task_states.RESUMING,
-                                  task_states.PAUSING,
-                                  task_states.SUSPENDING):
-        if instance['vm_state'] in (vm_states.PAUSED,
-                                    vm_states.SUSPENDED):
-            return 'suspended', [infrastructure.START]
-        else:
-            return 'suspended', []
-
-            # rebuild server - OS
-            # resize server confirm rebuild
-            # revert resized server - OS (indirectly OCCI)
-
-    return 'inactive', []
+    return state, actions

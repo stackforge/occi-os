@@ -191,30 +191,16 @@ class ComputeBackend(KindBackend, ActionBackend):
         if action not in entity.actions:
             raise AttributeError("This action is currently not applicable.")
         elif action == infrastructure.START:
-            state = entity.attributes['occi.compute.state']
-            vm.start_vm(uid, state, context)
-            entity.attributes['occi.compute.state'] = 'active'
-            entity.actions = [infrastructure.STOP,
-                              infrastructure.SUSPEND,
-                              infrastructure.RESTART,
-                              openstack.OS_REVERT_RESIZE,
-                              openstack.OS_CONFIRM_RESIZE,
-                              openstack.OS_CREATE_IMAGE]
+            vm.start_vm(uid, context)
         elif action == infrastructure.STOP:
             vm.stop_vm(uid, context)
-            entity.attributes['occi.compute.state'] = 'inactive'
-            entity.actions = [infrastructure.START]
         elif action == infrastructure.RESTART:
             if not 'method' in attributes:
                 raise AttributeError('Please provide a method!')
             method = attributes['method']
             vm.restart_vm(uid, method, context)
-            entity.attributes['occi.compute.state'] = 'inactive'
-            entity.actions = []
         elif action == infrastructure.SUSPEND:
             vm.suspend_vm(uid, context)
-            entity.attributes['occi.compute.state'] = 'suspended'
-            entity.actions = [infrastructure.START]
 
 # SOME HELPER FUNCTIONS
 

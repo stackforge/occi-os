@@ -75,12 +75,16 @@ class StorageBackend(backend.KindBackend, backend.ActionBackend):
             entity.attributes['occi.storage.state'] = 'online'
             entity.actions = [infrastructure.OFFLINE, infrastructure.BACKUP,
                               infrastructure.SNAPSHOT, infrastructure.RESIZE]
+        else:
+            entity.attributes['occi.storage.state'] = 'offline'
 
     def update(self, old, new, extras):
         """
         Updates simple attributes of a storage resource:
         occi.core.title, occi.core.summary
         """
+        # TODO: proper set the state of an storage instance!
+
         # update attributes.
         if len(new.attributes) > 0:
             # support only title and summary changes now.
