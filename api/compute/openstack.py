@@ -21,7 +21,7 @@ The compute resource backend for OpenStack.
 
 #pylint: disable=W0232,R0201
 import random
-from occi import backend
+from occi import backend, exceptions
 
 from api.extensions import openstack
 from api.extensions import occi_future
@@ -192,10 +192,13 @@ class SecurityRuleBackend(backend.KindBackend):
         """
         Deletes the security rule.
         """
-        context = extras['nova_ctx']
-        rule = security.get_rule(entity.attributes['occi.core.id'], context)
+        try:
+            context = extras['nova_ctx']
+            rule = security.get_rule(entity.attributes['occi.core.id'], context)
 
-        security.remove_rule(rule, context)
+            security.remove_rule(rule, context)
+        except Exception as error:
+            raise exceptions.HTTPError(500, str(error))
 
 
 def make_sec_rule(entity, sec_grp_id):

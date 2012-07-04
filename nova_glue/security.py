@@ -42,7 +42,7 @@ def create_group(name, description, context):
     context -- The os context.
     """
     if db.security_group_exists(context, context.project_id, name):
-        raise AttributeError('Security group %s already exists.')
+        raise AttributeError('Security group already exists: ' + name)
 
     group = {'user_id': context.user_id,
              'project_id': context.project_id,
@@ -59,8 +59,7 @@ def remove_group(group_id, context):
     group_id -- the group.
     context -- The os context.
     """
-    # TODO: check exception handling!
-
+    # TODO: there is a bug in nova somewhere for this call!
 
     try:
         if db.security_group_in_use(context, group_id):

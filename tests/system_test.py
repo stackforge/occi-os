@@ -23,6 +23,7 @@ import time
 import httplib
 import logging
 import unittest
+import random
 
 
 HEADS = {'Content-Type':'text/occi',
@@ -149,22 +150,6 @@ def trigger_action(token, url, action_cat, action_param =None):
     do_request('POST', url, heads)
 
 
-def attach_storage_vol(token, vm_location, vol_location):
-    heads = HEADS.copy()
-    heads['X-Auth-Token'] = token
-    heads['Category'] = 'storagelink; scheme="http://schemas.ogf.org/occi/infrastructure#"'
-    heads['X-OCCI-Attribute'] = 'occi.core.source=http://"' +\
-                                OCCI_HOST + vm_location +  '"'\
-                                                           ', occi.core.target=http://"' + OCCI_HOST +\
-                                vol_location +\
-                                '", occi.storagelink.deviceid="/dev/vdc"'
-    heads = do_request('POST', '/storage/link/', heads)
-    loc = heads['location'][0]
-    loc = loc[len('http://' + OCCI_HOST):]
-    LOG.debug('Storage link location is: ' + loc)
-    return loc
-
-
 class SystemTest(unittest.TestCase):
 
 
@@ -191,25 +176,36 @@ class SystemTest(unittest.TestCase):
             LOG.error('VM should be listed!')
 
         # wait
-        time.sleep(15)
-
-        # get individual node.
-        LOG.debug(get_node(self.token, vm_location)['x-occi-attribute'])
+        go = False
+        while not go:
+            if 'occi.compute.state="active"' in get_node(self.token, vm_location)['x-occi-attribute']:
+                go = True
+            else:
+                time.sleep(5)
 
         # trigger stop
         trigger_action(self.token, vm_location + '?action=stop',
             'stop; scheme="http://schemas.ogf.org/occi/infrastructure/compute/action#"')
 
         # wait
-        time.sleep(15)
-        LOG.debug(get_node(self.token, vm_location)['x-occi-attribute'])
+        go = False
+        while not go:
+            if 'occi.compute.state="inactive"' in get_node(self.token, vm_location)['x-occi-attribute']:
+                go = True
+            else:
+                time.sleep(5)
 
         # trigger start
         trigger_action(self.token, vm_location + '?action=start',
             'start; scheme="http://schemas.ogf.org/occi/infrastructure/compute/action#"')
 
         # wait
-        time.sleep(5)
+        go = False
+        while not go:
+            if 'occi.compute.state="active"' in get_node(self.token, vm_location)['x-occi-attribute']:
+                go = True
+            else:
+                time.sleep(5)
 
         # delete
         destroy_node(self.token, vm_location)
@@ -222,12 +218,13 @@ class SystemTest(unittest.TestCase):
         # create sec group
         heads = HEADS.copy()
         heads['X-Auth-Token'] = self.token
-        heads['Category'] = 'my_grp; scheme="http://www.mystuff.org/sec#"; class="mixin"; rel="http://schemas.ogf.org/occi/infrastructure/security#group"; location="/mygroups/"'
+        name = 'my_grp' + str(random.randint(1, 999999))
+        heads['Category'] = name + '; scheme="http://www.mystuff.org/sec#"; rel="http://schemas.ogf.org/occi/infrastructure/security#group"; location="/mygroups/"'
         do_request('POST', '/-/', heads)
 
 
         # create sec rule
-        cats = ['my_grp; scheme="http://www.mystuff.org/sec#"',
+        cats = [name + '; scheme="http://www.mystuff.org/sec#"',
                 'rule; scheme="http://schemas.openstack.org/occi/infrastructure/network/security#"']
         attrs = ['occi.network.security.protocol="tcp"',
                  'occi.network.security.to="22"',
@@ -247,7 +244,7 @@ class SystemTest(unittest.TestCase):
         # create new VM
         cats = ['m1.tiny; scheme="http://schemas.openstack.org/template/resource#"',
                 'cirros-0.3.0-x86_64-uec; scheme="http://schemas.openstack.org/template/os#"',
-                'my_grp; scheme="http://www.mystuff.org/sec#"',
+                name + '; scheme="http://www.mystuff.org/sec#"',
                 'compute; scheme="http://schemas.ogf.org/occi/infrastructure#"']
         vm_location = create_node(self.token, cats)
 
@@ -264,49 +261,86 @@ class SystemTest(unittest.TestCase):
         LOG.debug(trigger_action(self.token, vm_location + '?action=dealloc_float_ip',
             'dealloc_float_ip; scheme="http://schemas.openstack.org/instance/action#"'))
 
-        # delete rule
-        #print do_request('DELETE', sec_rule_loc, heads)
-
-        # FIXME: delete sec group - see #18
-        #heads['Category'] = 'my_grp; scheme="http://www.mystuff.org/sec#"'
-        #print do_request('DELETE', '/-/', heads)
-
-
         # change pw
         LOG.debug(trigger_action(self.token, vm_location + '?action=chg_pwd',
             'chg_pwd; scheme="http://schemas.openstack.org/instance/action#"',
             'org.openstack.credentials.admin_pwd="new_pass"'))
 
-        time.sleep(15)
+        # clean VM
+        destroy_node(self.token, vm_location)
+
+        # delete rule
+        destroy_node(self.token, sec_rule_loc)
+
+        # FIXME: delete sec group - see #18
+        heads = HEADS.copy()
+        heads['X-Auth-Token'] = self.token
+        heads['Category'] = name + '; scheme="http://www.mystuff.org/sec#"'
+        print do_request('DELETE', '/-/', heads)
+
+
+    def test_storage_stuff(self):
+        """
+        Test attaching and detaching storage volumes + snapshotting etc.
+        """
+        # create new VM
+        cats = ['m1.tiny; scheme="http://schemas.openstack.org/template/resource#"',
+                'cirros-0.3.0-x86_64-uec; scheme="http://schemas.openstack.org/template/os#"',
+                'compute; scheme="http://schemas.ogf.org/occi/infrastructure#"']
+        vm_location = create_node(self.token, cats)
+
+        # create volume
+        #cats = ['storage; scheme="http://schemas.ogf.org/occi/infrastructure#"']
+        #attrs = ['occi.storage.size = 1.0']
+        #vol_location = create_node(self.token, cats, attrs)
+
+        # get individual node.
+        #LOG.debug(get_node(self.token, vol_location)['x-occi-attribute'])
+
+        #time.sleep(15)
+
+        # link volume and copute
+        #cats = ['storagelink; scheme="http://schemas.ogf.org/occi/infrastructure#"']
+        #attrs = ['occi.core.source=http://"' + OCCI_HOST + vm_location +  '"',
+        #         'occi.core.target=http://"' + OCCI_HOST + vol_location + '"',
+        #         'occi.storagelink.deviceid="/dev/vdc"']
+        #link_location = create_node(self.token, cats, attrs)
+
+        # retrieve link
+        #LOG.debug(get_node(self.token, link_location)['x-occi-attribute'])
+
+        # FIXME: deassociate storage vol - see #15
+        #destroy_node(self.token, link_location)
+
+        #time.sleep(15)
+
+        #destroy_node(self.token, vol_location)
+
+        # wait
+        go = False
+        while not go:
+            if 'occi.compute.state="active"' in get_node(self.token, vm_location)['x-occi-attribute']:
+                go = True
+            else:
+                time.sleep(5)
 
         # Create a Image from an Active VM
         LOG.debug(trigger_action(self.token, vm_location + '?action=create_image',
             'create_image; scheme="http://schemas.openstack.org/instance/action#"',
             'org.openstack.snapshot.image_name="awesome_ware"'))
 
-        # clean VM
         destroy_node(self.token, vm_location)
 
 
-    def test_something(self):
-
-
-        # create volume
-        #vol_location = create_storage_node(token, 'occi.storage.size = 1.0')
-
-        # get individual node.
-        #LOG.debug(get_node(token, vol_location)['x-occi-attribute'])
-
-        # time.sleep(15)
-
-        # link volume and copute
-        #link_location = attach_storage_vol(token, vm_location, vol_location)
-
-        #LOG.debug(get_node(token, link_location)['x-occi-attribute'])
-
-        # deassociate storage vol - see #15
-        # destroy_node(token, link_location)
-        # destroy_node(token, vol_location) # untested because of last command
+    def test_scaling(self):
+        """
+        Test the scaling operations
+        """
+        # create new VM
+        cats = ['m1.tiny; scheme="http://schemas.openstack.org/template/resource#"',
+                'cirros-0.3.0-x86_64-uec; scheme="http://schemas.openstack.org/template/os#"',
+                'compute; scheme="http://schemas.ogf.org/occi/infrastructure#"']
+        vm_location = create_node(self.token, cats)
 
         # scale up VM - see #17
         #heads = HEADS.copy()
@@ -317,5 +351,13 @@ class SystemTest(unittest.TestCase):
         # confirm scale up
         #trigger_action(token, vm_location + '?action=confirm_resize', 'confirm_resize; scheme="http://schemas.openstack.org/instance/action#"')
 
-        pass
+        # wait
+        go = False
+        while not go:
+            if 'occi.compute.state="active"' in get_node(self.token, vm_location)['x-occi-attribute']:
+                go = True
+            else:
+                time.sleep(5)
+
+        destroy_node(self.token, vm_location)
 
