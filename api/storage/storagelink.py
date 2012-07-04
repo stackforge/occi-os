@@ -34,6 +34,8 @@ class StorageLinkBackend(backend.KindBackend):
     A backend for the storage links.
     """
 
+    # TODO: need to implement retrieve so states get updated!!!!
+
     def create(self, link, extras):
         """
         Creates a link from a compute instance to a storage volume.

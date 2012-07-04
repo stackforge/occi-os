@@ -60,12 +60,17 @@ def remove_group(group_id, context):
     context -- The os context.
     """
     # TODO: check exception handling!
-    if db.security_group_in_use(context, group_id):
-        raise AttributeError('Security group is still in use')
 
-    db.security_group_destroy(context, group_id)
-    SEC_HANDLER.trigger_security_group_destroy_refresh(
-        context, group_id)
+
+    try:
+        if db.security_group_in_use(context, group_id):
+            raise AttributeError('Security group is still in use')
+
+        db.security_group_destroy(context, group_id)
+        SEC_HANDLER.trigger_security_group_destroy_refresh(
+            context, group_id)
+    except Exception as error:
+        raise AttributeError(error)
 
 
 def retrieve_group(mixin_term, project_id, context):
@@ -118,8 +123,9 @@ def remove_rule(rule, context):
     db.security_group_rule_destroy(context, rule['id'])
     SEC_HANDLER.trigger_security_group_rule_destroy_refresh(context,
         [rule['id']])
-    COMPUTE_API.trigger_security_group_rules_refresh(context,
-                                                     security_group['id'])
+    # TODO: method is one!
+    #SEC_HANDLER.trigger_security_group_rules_refresh(context,
+    #                                                 security_group['id'])
 
 
 def get_rule(uid, context):

@@ -158,7 +158,7 @@ class SecurityGroupBackend(backend.UserDefinedMixinBackend):
         context = extras['nova_ctx']
         security_group = security.retrieve_group(category.term,
                                                  extras['nova_ctx'].project_id,
-                                                 extras)
+                                                 extras['nova_ctx'])
         security.remove_group(security_group, context)
 
 

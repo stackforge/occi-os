@@ -168,7 +168,7 @@ def rebuild_vm(uid, image_href, context):
         COMPUTE_API.rebuild(context, instance, image_href, admin_password,
                             **kwargs)
     except exception.InstanceInvalidState:
-        raise exceptions.HTTPError(409, 'VM is in an invalid state.')
+        raise AttributeError('VM is in an invalid state.')
     except exception.ImageNotFound:
         raise AttributeError('Cannot find image for rebuild')
 
@@ -194,8 +194,9 @@ def resize_vm(uid, flavor_name, context):
         raise AttributeError('Unable to locate requested flavor.')
     except exception.CannotResizeToSameSize:
         raise AttributeError('Resize requires a change in size.')
-    except exception.InstanceInvalidState:
-        raise exceptions.HTTPError(409, 'VM is in an invalid state.')
+    except exception.InstanceInvalidState as error:
+        raise error
+        #raise AttributeError('VM is in an invalid state.')
 
 
 def delete_vm(uid, context):
@@ -309,7 +310,7 @@ def restart_vm(uid, method, context):
     try:
         COMPUTE_API.reboot(context, instance, reboot_type)
     except exception.InstanceInvalidState:
-        raise exceptions.HTTPError(409, 'VM is in an invalid state.')
+        raise exceptions.HTTPError(406, 'VM is in an invalid state.')
     except Exception as error:
         msg = ("Error in reboot %s") % error
         raise exceptions.HTTPError(500, msg)
@@ -330,7 +331,6 @@ def attach_volume(instance_id, volume_id, mount_point, context):
         vol_instance = VOLUME_API.get(context, volume_id)
     except exception.NotFound:
         raise exceptions.HTTPError(404, 'Volume not found!')
-    LOG.debug(str(vol_instance) + ',' + str(dir(vol_instance)))
     volume_id = vol_instance['id']
 
     try:
@@ -355,9 +355,14 @@ def detach_volume(volume_id, context):
         instance = VOLUME_API.get(context, volume_id)
     except exception.NotFound:
         raise exceptions.HTTPError(404, 'Volume not found!')
-    volume_id = instance[0]
+    volume_id = instance['id']
 
-    COMPUTE_API.detach_volumne(context, volume_id)
+    try:
+        #TODO(dizz): see issue #15
+        COMPUTE_API.detach_volume(context, volume_id)
+    except Exception as error:
+        LOG.error(str(error) + volume_id)
+        raise error
 
 
 def set_password_for_vm(uid, password, context):
@@ -403,7 +408,7 @@ def revert_resize_vm(uid, context):
     except exception.MigrationNotFound:
         raise AttributeError('Instance has not been resized.')
     except exception.InstanceInvalidState:
-        raise exceptions.HTTPError(409, 'VM is an invalid state.')
+        raise exceptions.HTTPError(406, 'VM is an invalid state.')
     except Exception:
         raise AttributeError('Error in revert-resize.')
 
@@ -420,8 +425,9 @@ def confirm_resize_vm(uid, context):
         COMPUTE_API.confirm_resize(context, instance)
     except exception.MigrationNotFound:
         raise AttributeError('Instance has not been resized.')
-    except exception.InstanceInvalidState:
-        raise exceptions.HTTPError(409, 'VM is an invalid state.')
+    except exception.InstanceInvalidState as error:
+        raise error
+        # raise exceptions.HTTPError(406, 'VM is an invalid state.')
     except Exception:
         raise AttributeError('Error in confirm-resize.')
 

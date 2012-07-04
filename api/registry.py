@@ -76,7 +76,6 @@ class OCCIRegistry(occi_registry.NonePersistentRegistry):
         if (hasattr(category, 'related') and
                                     occi_future.SEC_GROUP in category.related):
             backend = openstack.SecurityGroupBackend()
-            backend = backend
             backend.init_sec_group(category, extras)
 
         super(OCCIRegistry, self).set_backend(category, backend, extras)

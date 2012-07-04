@@ -125,10 +125,10 @@ class ComputeBackend(KindBackend, ActionBackend):
         LOG.debug('Updating an Virtual machine: ', uid)
 
         # update title, summary etc.
-        if len(new.attributes['occi.core.title']) > 0:
+        if 'occi.core.title' in new.attributes:
             old.attributes['occi.core.title'] = \
             new.attributes['occi.core.title']
-        if len(new.attributes['occi.core.summary']) > 0:
+        if 'occi.core.summary' in new.attributes:
             old.attributes['occi.core.summary'] = \
             new.attributes['occi.core.summary']
 
