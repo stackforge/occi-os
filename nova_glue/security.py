@@ -22,15 +22,16 @@ Security related 'glue'
 
 from nova import compute
 from nova import db
+from nova import utils
 from nova.flags import FLAGS
-from nova.openstack.common import importutils
 
 # connect to nova
 from occi import exceptions
 
 COMPUTE_API = compute.API()
 
-SEC_HANDLER = importutils.import_object(FLAGS.security_group_handler)
+SEC_HANDLER = utils.import_object(FLAGS.security_group_handler)
+#SEC_HANDLER = importutils.import_object(FLAGS.security_group_handler)
 
 
 def create_group(name, description, context):
@@ -123,8 +124,8 @@ def remove_rule(rule, context):
     SEC_HANDLER.trigger_security_group_rule_destroy_refresh(context,
         [rule['id']])
     # TODO: method is one!
-    #SEC_HANDLER.trigger_security_group_rules_refresh(context,
-    #                                                 security_group['id'])
+    SEC_HANDLER.trigger_security_group_rules_refresh(context,
+                                                     security_group['id'])
 
 
 def get_rule(uid, context):

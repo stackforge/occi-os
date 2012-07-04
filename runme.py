@@ -34,7 +34,8 @@ from nova import service
 from nova import utils
 
 if __name__ == '__main__':
-    flags.parse_args(sys.argv)
+    utils.default_flagfile()
+    flags.FLAGS(sys.argv)
     logging.setup()
     utils.monkey_patch()
     server = service.WSGIService('occiapi')
