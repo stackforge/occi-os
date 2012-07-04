@@ -1,8 +1,6 @@
 occi-os
 =======
 
-Note: This is the essex branch!
-
 This is a clone and continuation of https://github.com/dizz/nova - it provides a python egg which can be easily
 deployed in [OpenStack](http://www.openstack.org) and will thereby add the 3rd party [OCCI](http://www.occi-wg.org)
 interface to OpenStack.
