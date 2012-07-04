@@ -202,6 +202,8 @@ def make_sec_rule(entity, sec_grp_id):
     """
     Create and validate the security rule.
     """
+    # TODO: add some checks for missing attributes!
+
     name = random.randrange(0, 99999999)
     sg_rule = {'id': name}
     entity.attributes['occi.core.id'] = str(sg_rule['id'])
@@ -211,7 +213,7 @@ def make_sec_rule(entity, sec_grp_id):
     if prot in ('tcp', 'udp', 'icmp'):
         sg_rule['protocol'] = prot
     else:
-        raise AttributeError('Invalid protocol defined.')
+        raise AttributeError('Invalid protocol defined:' + prot)
     from_p = entity.attributes['occi.network.security.to'].strip()
     from_p = int(from_p)
     if (type(from_p) is int) and 0 < from_p <= 65535:
