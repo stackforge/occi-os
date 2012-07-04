@@ -1,8 +1,7 @@
 #!/bin/sh
 
 rm -rf build/html
-mkdir build
-mkdir build/html
+mkdir -p build/html
 
 echo '\n PyLint report \n****************************************\n'
 
