@@ -351,17 +351,17 @@ def detach_volume(volume_id, context):
     volume_id -- Id of the volume.
     context -- the os context.
     """
-    try:
-        instance = VOLUME_API.get(context, volume_id)
-    except exception.NotFound:
-        raise exceptions.HTTPError(404, 'Volume not found!')
-    volume_id = instance['id']
+    #try:
+    #    instance = VOLUME_API.get(context, volume_id)
+    #except exception.NotFound:
+    #    raise exceptions.HTTPError(404, 'Volume not found!')
+    #volume_id = instance['id']
 
     try:
         #TODO(dizz): see issue #15
         COMPUTE_API.detach_volume(context, volume_id)
     except Exception as error:
-        LOG.error(str(error) + volume_id)
+        LOG.error(str(error) + '; with id: '  + volume_id)
         raise error
 
 
