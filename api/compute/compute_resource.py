@@ -108,8 +108,6 @@ class ComputeBackend(KindBackend, ActionBackend):
         value = str(float(instance['memory_mb']) / 1024)
         entity.attributes['occi.compute.memory'] = value
 
-
-
         #Now we have the instance state, get its updated network info
         net_info = net.get_adapter_info(uid, context)
         attach_to_default_network(net_info, entity, extras)

@@ -6,11 +6,11 @@ mkdir -p build/html
 echo '\n PyLint report \n****************************************\n'
 
 #pylint -d I0011 -i y -f html api tests >> build/html/lint.html
-pylint -d W0511,I0011,E1101,E0611,F0401 -i y --report no *
+pylint -d W0511,I0011,E1101,E0611,F0401 -i y --report no **/*.py
 
 echo '\n Unittest coverage \n****************************************\n'
 
-nosetests --with-coverage --cover-html --cover-html-dir=build/html/ --cover-erase --cover-package=api,nova_glue
+# nosetests --with-coverage --cover-html --cover-html-dir=build/html/ --cover-erase --cover-package=api,nova_glue
 
 echo '\n Code style \n****************************************\n'
 

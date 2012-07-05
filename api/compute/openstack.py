@@ -117,7 +117,7 @@ class OsComputeActionBackend(backend.ActionBackend):
             entity.attributes['org.openstack.network.floating.ip'] = address
         elif action == openstack.OS_DEALLOC_FLOATING_IP:
             address = entity.attributes['org.openstack.network.floating.ip']
-            net.remove_floating_ip(uid, address, context)
+            net.remove_floating_ip(address, context)
 
             # remove the mixin
             for mixin in entity.mixins:
@@ -194,7 +194,8 @@ class SecurityRuleBackend(backend.KindBackend):
         """
         try:
             context = extras['nova_ctx']
-            rule = security.get_rule(entity.attributes['occi.core.id'], context)
+            rule = security.get_rule(entity.attributes['occi.core.id'],
+                                     context)
 
             security.remove_rule(rule, context)
         except Exception as error:

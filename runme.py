@@ -22,10 +22,10 @@ import os
 import sys
 
 
-possible_topdir = os.path.normpath(os.path.join(os.path.abspath(
+TOPDIR = os.path.normpath(os.path.join(os.path.abspath(
     sys.argv[0]), os.pardir, os.pardir))
-if os.path.exists(os.path.join(possible_topdir, "nova", "__init__.py")):
-    sys.path.insert(0, possible_topdir)
+if os.path.exists(os.path.join(TOPDIR, "nova", "__init__.py")):
+    sys.path.insert(0, TOPDIR)
 
 
 from nova import flags
@@ -38,6 +38,6 @@ if __name__ == '__main__':
     flags.FLAGS(sys.argv)
     logging.setup()
     utils.monkey_patch()
-    server = service.WSGIService('occiapi')
-    service.serve(server)
+    SERVER = service.WSGIService('occiapi')
+    service.serve(SERVER)
     service.wait()

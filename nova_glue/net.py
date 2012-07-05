@@ -120,7 +120,7 @@ def add_flaoting_ip_to_vm(uid, attributes, context):
     return float_address
 
 
-def remove_floating_ip(uid, address, context):
+def remove_floating_ip(address, context):
     """
     Remove a given address from an VM instance.
 
@@ -129,7 +129,6 @@ def remove_floating_ip(uid, address, context):
     context -- The os context.
     """
     # TODO: check exception handling!
-    # vm_instance = vm.get_vm(uid, context)
 
     NETWORK_API.disassociate_floating_ip(context, address)
     NETWORK_API.release_floating_ip(context, address)

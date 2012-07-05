@@ -68,7 +68,6 @@ def remove_group(group_id, context):
         SEC_HANDLER.trigger_security_group_destroy_refresh(
             context, group_id)
 
-
     except Exception as error:
         raise AttributeError(error)
 

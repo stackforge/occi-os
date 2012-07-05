@@ -74,16 +74,13 @@ def create_vm(entity, context):
     auto_disk_config = None
     scheduler_hints = None
 
-    r_count = o_count = 0
     resource_template = None
     os_template = None
     for mixin in entity.mixins:
         if isinstance(mixin, templates.ResourceTemplate):
             resource_template = mixin
-            r_count += 1
         elif isinstance(mixin, templates.OsTemplate):
             os_template = mixin
-            o_count += 1
         elif mixin == openstack.OS_KEY_PAIR_EXT:
             attr = 'org.openstack.credentials.publickey.name'
             key_name = entity.attributes[attr]
@@ -108,10 +105,10 @@ def create_vm(entity, context):
         if occi_future.SEC_GROUP in mixin.related:
             sg_names.append(mixin.term)
 
-    name = resource_template.term
-    image_id = os_template.os_id
+    if not os_template:
+        raise AttributeError('Please provide a valid OS Template.')
 
-    if name:
+    if resource_template:
         inst_type = compute.instance_types.get_instance_type_by_name(name)
     else:
         inst_type = compute.instance_types.get_default_instance_type()
@@ -123,7 +120,7 @@ def create_vm(entity, context):
         (instances, _reservation_id) = COMPUTE_API.create(
             context=context,
             instance_type=inst_type,
-            image_href=image_id,
+            image_href=os_template.os_id,
             kernel_id=kernel_id,
             ramdisk_id=ramdisk_id,
             min_count=min_count,
@@ -361,7 +358,7 @@ def detach_volume(volume_id, context):
         #TODO(dizz): see issue #15
         COMPUTE_API.detach_volume(context, volume_id)
     except Exception as error:
-        LOG.error(str(error) + '; with id: '  + volume_id)
+        LOG.error(str(error) + '; with id: ' + volume_id)
         raise error
 
 
@@ -389,7 +386,7 @@ def get_vnc(uid, context):
     instance = get_vm(uid, context)
     try:
         console = COMPUTE_API.get_vnc_console(context, instance, 'novnc')
-    except Exception as error:
+    except exception.NotFound as error:
         LOG.warn('Console info is not available yet: ' + str(error))
         return None
     return console
@@ -426,7 +423,8 @@ def confirm_resize_vm(uid, context):
     except exception.MigrationNotFound:
         raise AttributeError('Instance has not been resized.')
     except exception.InstanceInvalidState as error:
-        raise exceptions.HTTPError(406, 'VM is an invalid state: ' + str(error))
+        raise exceptions.HTTPError(406, 'VM is an invalid state: ' +
+                                        str(error))
     except Exception:
         raise AttributeError('Error in confirm-resize.')
 
