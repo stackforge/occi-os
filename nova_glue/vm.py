@@ -426,8 +426,7 @@ def confirm_resize_vm(uid, context):
     except exception.MigrationNotFound:
         raise AttributeError('Instance has not been resized.')
     except exception.InstanceInvalidState as error:
-        raise error
-        # raise exceptions.HTTPError(406, 'VM is an invalid state.')
+        raise exceptions.HTTPError(406, 'VM is an invalid state: ' + str(error))
     except Exception:
         raise AttributeError('Error in confirm-resize.')
 
@@ -464,7 +463,7 @@ def get_occi_state(uid, context):
     actions = []
 
     if instance['vm_state'] in [vm_states.ACTIVE,
-                                vm_states.RESIZED]:
+                                vm_states.RESIZING]:
         state = 'active'
         actions.append(infrastructure.STOP)
         actions.append(infrastructure.SUSPEND)
@@ -476,7 +475,7 @@ def get_occi_state(uid, context):
         state = 'inactive'
         actions.append(infrastructure.START)
     elif instance['vm_state'] in [vm_states.RESCUED,
-                                  vm_states.ERROR, vm_states.SOFT_DELETED,
+                                  vm_states.ERROR, vm_states.SOFT_DELETE,
                                   vm_states.DELETED]:
         state = 'inactive'
 

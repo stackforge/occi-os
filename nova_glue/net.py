@@ -21,14 +21,16 @@ Network related 'glue' :-)
 
 import logging
 
-from nova import network, exception
-from nova.compute import utils as compute_utils
+from nova import network
+from nova import exception
+from nova import compute
 
 from nova_glue import vm
 
 # Connect to nova :-)
 
 NETWORK_API = network.API()
+COMPUTE_API = compute.API()
 
 LOG = logging.getLogger('nova.api.wsgi.occi.nova_glue.net')
 
@@ -84,13 +86,13 @@ def add_flaoting_ip_to_vm(uid, attributes, context):
     """
     vm_instance = vm.get_vm(uid, context)
 
-    cached_nwinfo = compute_utils.get_nw_info_for_instance(vm_instance)
-    if not cached_nwinfo:
-        raise AttributeError('No nw_info cache associated with instance')
+    #cached_nwinfo = compute_utils.get_nw_info_for_instance(vm_instance)
+    #if not cached_nwinfo:
+    #    raise AttributeError('No nw_info cache associated with instance')
 
-    fixed_ips = cached_nwinfo.fixed_ips()
-    if not fixed_ips:
-        raise AttributeError('No fixed ips associated to instance')
+    #fixed_ips = cached_nwinfo.fixed_ips()
+    #if not fixed_ips:
+    #    raise AttributeError('No fixed ips associated to instance')
 
     if 'org.openstack.network.floating.pool' not in attributes:
         pool = None
@@ -99,14 +101,13 @@ def add_flaoting_ip_to_vm(uid, attributes, context):
 
     float_address = NETWORK_API.allocate_floating_ip(context, pool)
 
-    if len(fixed_ips) > 1:
-        LOG.warn('multiple fixed_ips exist, using the first')
+    #if len(fixed_ips) > 1:
+    #    LOG.warn('multiple fixed_ips exist, using the first')
 
     try:
-        address = fixed_ips[0]['address']
-        NETWORK_API.associate_floating_ip(context, vm_instance,
-                                          floating_address=float_address,
-                                          fixed_address=address)
+        # address = fixed_ips[0]['address']
+        COMPUTE_API.associate_floating_ip(context, vm_instance,
+                                          float_address)
     except exception.FloatingIpAssociated:
         msg = 'floating ip is already associated'
         raise AttributeError(msg)
@@ -114,7 +115,7 @@ def add_flaoting_ip_to_vm(uid, attributes, context):
         msg = 'l3driver call to add floating ip failed'
         raise AttributeError(msg)
     except Exception as error:
-        msg = 'Error. Unable to associate floating ip' + str(error)
+        msg = 'Error. Unable to associate floating ip: ' + str(error)
         raise AttributeError(msg)
     return float_address
 
@@ -128,7 +129,7 @@ def remove_floating_ip(uid, address, context):
     context -- The os context.
     """
     # TODO: check exception handling!
-    vm_instance = vm.get_vm(uid, context)
+    # vm_instance = vm.get_vm(uid, context)
 
-    NETWORK_API.disassociate_floating_ip(context, vm_instance, address)
+    NETWORK_API.disassociate_floating_ip(context, address)
     NETWORK_API.release_floating_ip(context, address)

@@ -159,7 +159,7 @@ class SecurityGroupBackend(backend.UserDefinedMixinBackend):
         security_group = security.retrieve_group(category.term,
                                                  extras['nova_ctx'].project_id,
                                                  extras['nova_ctx'])
-        security.remove_group(security_group, context)
+        security.remove_group(security_group.id, context)
 
 
 class SecurityRuleBackend(backend.KindBackend):

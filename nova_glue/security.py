@@ -60,8 +60,6 @@ def remove_group(group_id, context):
     group_id -- the group.
     context -- The os context.
     """
-    # TODO: there is a bug in nova somewhere for this call!
-
     try:
         if db.security_group_in_use(context, group_id):
             raise AttributeError('Security group is still in use')
@@ -69,6 +67,8 @@ def remove_group(group_id, context):
         db.security_group_destroy(context, group_id)
         SEC_HANDLER.trigger_security_group_destroy_refresh(
             context, group_id)
+
+
     except Exception as error:
         raise AttributeError(error)
 
@@ -124,7 +124,7 @@ def remove_rule(rule, context):
     SEC_HANDLER.trigger_security_group_rule_destroy_refresh(context,
         [rule['id']])
     # TODO: method is one!
-    SEC_HANDLER.trigger_security_group_rules_refresh(context,
+    COMPUTE_API.trigger_security_group_rules_refresh(context,
                                                      security_group['id'])
 
 
