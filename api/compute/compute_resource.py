@@ -35,7 +35,7 @@ from occi import core_model
 from occi.backend import KindBackend, ActionBackend
 from occi.extensions import infrastructure
 
-LOG = logging.getLogger('api.compute.compute_resource')
+LOG = logging.getLogger('nova.api.wsgi.occi.compute.compute_resource')
 
 
 class ComputeBackend(KindBackend, ActionBackend):

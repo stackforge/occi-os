@@ -43,7 +43,7 @@ import logging
 COMPUTE_API = compute.API()
 VOLUME_API = volume.API()
 
-LOG = logging.getLogger('nova.api.occi.nova_glue')
+LOG = logging.getLogger('nova.api.wsgi.occi.nova_glue.vm')
 
 
 def create_vm(entity, context):
@@ -109,7 +109,8 @@ def create_vm(entity, context):
         raise AttributeError('Please provide a valid OS Template.')
 
     if resource_template:
-        inst_type = compute.instance_types.get_instance_type_by_name(name)
+        inst_type = compute.instance_types.get_instance_type_by_name\
+            (resource_template.term)
     else:
         inst_type = compute.instance_types.get_default_instance_type()
         msg = ('No resource template was found in the request. '
@@ -386,8 +387,8 @@ def get_vnc(uid, context):
     instance = get_vm(uid, context)
     try:
         console = COMPUTE_API.get_vnc_console(context, instance, 'novnc')
-    except exception.NotFound as error:
-        LOG.warn('Console info is not available yet: ' + str(error))
+    except Exception as error:
+        LOG.warn('Console info is not available yet!')
         return None
     return console
 
