@@ -56,6 +56,16 @@ class OCCIRegistry(occi_registry.NonePersistentRegistry):
 
         super(OCCIRegistry, self).add_resource(key, resource, extras)
 
+    def get_resource(self, key, extras):
+        """
+        Ensure that the default network is visible to all!
+        """
+        # TODO: move to pyssf!
+        if self.resources[key].extras is not None and self.resources[key]\
+                                                   .extras != self.get_extras(extras):
+            raise KeyError
+        return self.resources[key]
+
     def delete_mixin(self, mixin, extras):
         """
         Allows for the deletion of user defined mixins.

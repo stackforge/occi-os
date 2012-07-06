@@ -346,7 +346,7 @@ def get_net_info(net_attrs):
     net_attrs['occi.network.address'] = networks[0]['cidr']
     net_attrs['occi.network.label'] = 'public'
     net_attrs['occi.network.state'] = 'up'
-    net_attrs['occi.network.gateway'] = networks[0]['gateway'],
+    net_attrs['occi.network.gateway'] = str(networks[0]['gateway'])
     net_attrs['occi.network.allocation'] = 'dhcp'
 
     return net_attrs

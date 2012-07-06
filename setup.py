@@ -27,7 +27,7 @@ from setuptools import setup
 
 setup(
     name='openstackocci',
-    version='1.1',
+    version='essex-1.1',
     description='OCCI interface for Openstack.',
     long_description='''
          This is a clone of https://github.com/dizz/nova - it provides a
