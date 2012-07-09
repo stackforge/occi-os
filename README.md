@@ -40,7 +40,7 @@ Make sure the API (name from above) is enabled in `nova.conf`:
 	
 #### Hacking the port number
 
-You can set the port option via the `nova.conf` configuration file:
+(Optional) You can set the port option via the `nova.conf` configuration file - default is 8787:
 
     [...]
     occiapi_listen_port=9999
