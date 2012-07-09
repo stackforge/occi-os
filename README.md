@@ -8,6 +8,7 @@ interface to OpenStack.
 Usage
 -----
 
+0. Install dependencies: `pip install pyssf`
 1. Install this egg: `python setup.py install` (later maybe `pip install occi-os`)
 2. Configure OpenStack - Add application to `api-paste.ini` of nova and enable the API
 
