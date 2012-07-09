@@ -272,10 +272,8 @@ def set_console_info(entity, uid, extras):
             vnc_console_present = True
 
     registry = extras['registry']
-    if not ssh_console_present:
-        address = entity.links[0].attributes['occi.networkinterface.address']
-        if address is '':
-            return
+    address = entity.links[0].attributes['occi.networkinterface.address']
+    if not ssh_console_present and len(address) > 7:
         identifier = str(uuid.uuid4())
         ssh_console = core_model.Resource(
             identifier, occi_future.SSH_CONSOLE, [],
