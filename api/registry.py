@@ -35,6 +35,7 @@ class OCCIRegistry(occi_registry.NonePersistentRegistry):
 
     def __init__(self):
         super(OCCIRegistry, self).__init__()
+        self.transient = {}
 
     def get_extras(self, extras):
         """
@@ -55,6 +56,31 @@ class OCCIRegistry(occi_registry.NonePersistentRegistry):
         resource.identifier = key
 
         super(OCCIRegistry, self).add_resource(key, resource, extras)
+
+    def add_transient_resource(self, parent, key, resource, extras):
+        """
+        Add a resource which is transient - meaning when the parent which
+        links to this resource gets deleted the transient resource gets
+        deleted as well.
+        """
+        self.add_resource(key, resource, extras)
+        if parent in self.transient:
+            self.transient[parent].append(resource)
+        else:
+            self.transient[parent] = [resource]
+
+    def delete_resource(self, key, extras):
+        """
+        Deletes a resource. When resource has associate resources those
+        will be deleted as well.
+        """
+        parent = self.get_resource(key, extras)
+        if parent in self.transient:
+            for item in self.transient[parent]:
+                tmp = item.identifier
+                super(OCCIRegistry, self).delete_resource(tmp, extras)
+
+        super(OCCIRegistry, self).delete_resource(key, extras)
 
     def get_resource(self, key, extras):
         """

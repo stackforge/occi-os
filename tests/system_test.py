@@ -390,34 +390,34 @@ class SystemTest(unittest.TestCase):
         Test the scaling operations
         """
         # create new VM
-        cats = ['m1.tiny; scheme="http://schemas.openstack'
+        cats = ['itsy; scheme="http://schemas.openstack'
                 '.org/template/resource#"',
                 'cirros-0.3.0-x86_64-uec; scheme="http://schemas.openstack'
                 '.org/template/os#"',
                 'compute; scheme="http://schemas.ogf.org/occi/infrastructure#"']
         vm_location = create_node(self.token, cats)
-#
-#        # wait
-#        go = False
-#        while not go:
-#            if 'occi.compute.state="active"' in get_node(self.token,
-#                                vm_location)['x-occi-attribute']:
-#                go = True
-#            else:
-#                time.sleep(5)
-#
-#        # scale up VM - see #17
-#        heads = HEADS.copy()
-#        heads['X-Auth-Token'] = self.token
-#        heads['Category'] = 'm1.large; scheme="http://schemas.openstack
-# .org/template/resource#"'
-#        print do_request('POST', vm_location, heads)
-#
-#        time.sleep(60)
-#
-#        # confirm scale up
-#        trigger_action(self.token, vm_location + '?action=confirm_resize',
-# 'confirm_resize; scheme="http://schemas.openstack.org/instance/action#"')
+
+        # wait
+        go = False
+        while not go:
+            if 'occi.compute.state="active"' in get_node(self.token,
+                                vm_location)['x-occi-attribute']:
+                go = True
+            else:
+                time.sleep(5)
+
+        # scale up VM - see #17
+        heads = HEADS.copy()
+        heads['X-Auth-Token'] = self.token
+        heads['Category'] = 'bitsy; scheme="http://schemas.openstack' \
+                            '.org/template/resource#"'
+        do_request('POST', vm_location, heads)
+
+        time.sleep(60)
+
+        # confirm scale up
+        trigger_action(self.token, vm_location + '?action=confirm_resize',
+'confirm_resize; scheme="http://schemas.openstack.org/instance/action#"')
 
         # wait
         cont = False

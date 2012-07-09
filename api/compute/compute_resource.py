@@ -258,7 +258,6 @@ def set_console_info(entity, uid, extras):
     """
     Adds console access information to the resource.
     """
-    address = entity.links[0].attributes['occi.networkinterface.address']
 
     ssh_console_present = False
     vnc_console_present = False
@@ -274,6 +273,9 @@ def set_console_info(entity, uid, extras):
 
     registry = extras['registry']
     if not ssh_console_present:
+        address = entity.links[0].attributes['occi.networkinterface.address']
+        if address is '':
+            return
         identifier = str(uuid.uuid4())
         ssh_console = core_model.Resource(
             identifier, occi_future.SSH_CONSOLE, [],
@@ -282,7 +284,8 @@ def set_console_info(entity, uid, extras):
         ssh_console.attributes['occi.core.id'] = identifier
         ssh_console.attributes['org.openstack.compute.console.ssh'] = \
         'ssh://' + address + ':22'
-        registry.add_resource(identifier, ssh_console, extras)
+        registry.add_transient_resource(entity, identifier, ssh_console,
+            extras)
 
         identifier = str(uuid.uuid4())
         ssh_console_link = core_model.Link(
@@ -308,7 +311,8 @@ def set_console_info(entity, uid, extras):
         vnc_console.attributes['org.openstack.compute.console.vnc'] = \
         console['url']
 
-        registry.add_resource(identifier, vnc_console, extras)
+        registry.add_transient_resource(entity, identifier, vnc_console,
+            extras)
 
         identifier = str(uuid.uuid4())
         vnc_console_link = core_model.Link(
