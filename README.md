@@ -47,3 +47,5 @@ Make sure the API (name from above) is enabled in `nova.conf`:
     [...]
     occiapi_listen_port=9999
     [...]
+
+There is further documentation on [setting up your development environment in the wiki](https://github.com/tmetsch/occi-os/wiki/DevEnv).
