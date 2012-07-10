@@ -12,6 +12,8 @@ Usage
 1. Install this egg: `python setup.py install` (later maybe `pip install occi-os`)
 2. Configure OpenStack - Add application to `api-paste.ini` of nova and enable the API
 
+***Note***: do not install the [occi](http://pypi.python.org/pypi/occi/0.6) package via `pip`. This is a seperate project and not related to OpenStack & OCCI.
+
 ### Configuration
 
 Make sure an application is configured in `api-paste.ini` (name can be picked yourself):
