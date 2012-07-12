@@ -1,22 +1,28 @@
-occi-os
-=======
+OCCI for OpenStack
+==================
 
-This is a clone and continuation of https://github.com/dizz/nova - it provides a python egg which can be easily
-deployed in [OpenStack](http://www.openstack.org) and will thereby add the 3rd party [OCCI](http://www.occi-wg.org)
-interface to OpenStack.
+This is a clone and continuation of https://github.com/dizz/nova - it
+provides a python egg which can be easily deployed in [OpenStack](http://www
+.openstack.org) and will thereby add the 3rd party [OCCI](http://www.occi-wg
+.org) interface to OpenStack.
 
 Usage
 -----
 
 0. Install dependencies: `pip install pyssf`
-1. Install this egg: `python setup.py install` (later maybe `pip install occi-os`)
-2. Configure OpenStack - Add application to `api-paste.ini` of nova and enable the API
+1. Install this egg: `python setup.py install` (or `pip install
+openstackocci`)
+2. Configure OpenStack - Add application to `api-paste.ini` of nova and
+enable the API
 
-***Note***: do not install the [occi](http://pypi.python.org/pypi/occi/0.6) package via `pip`. This is a seperate project and not related to OpenStack & OCCI.
+***Note***: do not install the [occi](http://pypi.python.org/pypi/occi/0.6)
+package via `pip`. This is a seperate project and not related to OpenStack &
+ OCCI.
 
 ### Configuration
 
-Make sure an application is configured in `api-paste.ini` (name can be picked yourself):
+Make sure an application is configured in `api-paste.ini` (name can be
+picked yourself):
 
 	########
 	# OCCI #
@@ -42,10 +48,12 @@ Make sure the API (name from above) is enabled in `nova.conf`:
 	
 #### Hacking the port number
 
-(Optional) You can set the port option via the `nova.conf` configuration file - default is 8787:
+(Optional) You can set the port option via the `nova.conf` configuration
+file - default is 8787:
 
     [...]
     occiapi_listen_port=9999
     [...]
 
-There is further documentation on [setting up your development environment in the wiki](https://github.com/tmetsch/occi-os/wiki/DevEnv).
+There is further documentation on [setting up your development environment
+in the wiki](https://github.com/tmetsch/occi-os/wiki/DevEnv).

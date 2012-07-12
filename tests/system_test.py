@@ -44,9 +44,9 @@ LOG.addHandler(CONSOLE)
 
 
 def do_request(verb, url, headers):
-    '''
+    """
     Do an HTTP request defined by a HTTP verb, an URN and a dict of headers.
-    '''
+    """
     conn = httplib.HTTPConnection(OCCI_HOST)
     conn.request(verb, url, None, headers)
     response = conn.getresponse()
@@ -70,9 +70,9 @@ def do_request(verb, url, headers):
 
 
 def get_os_token(username, password):
-    '''
+    """
     Get a security token from Keystone.
-    '''
+    """
     body = '{"auth": {"tenantName": "'+username+'", ' \
            '"passwordCredentials":{"username": "'+username+'", ' \
            '"password": "'+password+'"}}}'
@@ -88,9 +88,9 @@ def get_os_token(username, password):
 
 
 def get_qi_listing(token):
-    '''
+    """
     Retrieve categories from QI.
-    '''
+    """
     heads = HEADS.copy()
     heads['X-Auth-Token'] = token
     result = do_request('GET', '/-/', heads)
@@ -98,9 +98,9 @@ def get_qi_listing(token):
 
 
 def create_node(token, category_list, attributes=[]):
-    '''
+    """
     Create a VM.
-    '''
+    """
     heads = HEADS.copy()
     heads['X-Auth-Token'] = token
 
@@ -124,9 +124,9 @@ def create_node(token, category_list, attributes=[]):
 
 
 def list_nodes(token, url):
-    '''
+    """
     List a bunch of resource.
-    '''
+    """
     heads = HEADS.copy()
     heads['X-Auth-Token'] = token
     heads = do_request('GET', url, heads)
@@ -134,9 +134,9 @@ def list_nodes(token, url):
 
 
 def get_node(token, location):
-    '''
+    """
     Retrieve a single resource.
-    '''
+    """
     heads = HEADS.copy()
     heads['X-Auth-Token'] = token
     heads = do_request('GET', location, heads)
@@ -144,9 +144,9 @@ def get_node(token, location):
 
 
 def destroy_node(token, location):
-    '''
+    """
     Destroy a single node.
-    '''
+    """
     heads = HEADS.copy()
     heads['X-Auth-Token'] = token
     heads = do_request('DELETE', location, heads)
@@ -154,9 +154,9 @@ def destroy_node(token, location):
 
 
 def trigger_action(token, url, action_cat, action_param =None):
-    '''
+    """
     Trigger an OCCI action.
-    '''
+    """
     heads = HEADS.copy()
     heads['X-Auth-Token'] = token
     heads['Category'] = action_cat
@@ -167,9 +167,9 @@ def trigger_action(token, url, action_cat, action_param =None):
 
 
 class SystemTest(unittest.TestCase):
-    '''
+    """
     Do a simple set of test.
-    '''
+    """
 
 
     def setUp(self):
@@ -398,11 +398,11 @@ class SystemTest(unittest.TestCase):
         vm_location = create_node(self.token, cats)
 
         # wait
-        go = False
-        while not go:
+        cont = False
+        while not cont:
             if 'occi.compute.state="active"' in get_node(self.token,
                                 vm_location)['x-occi-attribute']:
-                go = True
+                cont = True
             else:
                 time.sleep(5)
 
