@@ -27,6 +27,8 @@ from api.compute import openstack
 
 from api.extensions import occi_future
 
+from nova.flags import FLAGS
+
 
 class OCCIRegistry(occi_registry.NonePersistentRegistry):
     """
@@ -36,6 +38,11 @@ class OCCIRegistry(occi_registry.NonePersistentRegistry):
     def __init__(self):
         super(OCCIRegistry, self).__init__()
         self.transient = {}
+
+    def set_hostname(self, hostname):
+        if FLAGS.occi_custom_location_hostname:
+            hostname = FLAGS.occi_custom_location_hostname
+        super(OCCIRegistry, self).set_hostname(hostname)
 
     def get_extras(self, extras):
         """
