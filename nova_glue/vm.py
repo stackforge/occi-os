@@ -56,7 +56,7 @@ def create_vm(entity, context):
     if 'occi.compute.hostname' in entity.attributes:
         name = entity.attributes['occi.compute.hostname']
     else:
-        name = 'None'
+        name = None
     key_name = key_data = None
     password = utils.generate_password(FLAGS.password_length)
     access_ip_v4 = None
