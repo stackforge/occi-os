@@ -64,7 +64,11 @@ OCCI_OPTS = [
                         help="The network manager to use with the OCCI API."),
              cfg.IntOpt("occiapi_listen_port",
                         default=8787,
-                        help="Port OCCI interface will listen on.")
+                        help="Port OCCI interface will listen on."),
+             cfg.StrOpt("occi_custom_location_hostname",
+                        default=None,
+                        help="Override OCCI location hostname with custom value")
+
              ]
 
 FLAGS = flags.FLAGS
