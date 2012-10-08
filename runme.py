@@ -1,4 +1,6 @@
 #!/usr/bin/env python
+
+# coding=utf-8
 # vim: tabstop=4 shiftwidth=4 softtabstop=4
 
 #    Licensed under the Apache License, Version 2.0 (the "License");
@@ -27,16 +29,14 @@ TOPDIR = os.path.normpath(os.path.join(os.path.abspath(
 if os.path.exists(os.path.join(TOPDIR, "nova", "__init__.py")):
     sys.path.insert(0, TOPDIR)
 
-
 from nova import flags
-from nova import log as logging
 from nova import service
 from nova import utils
+from nova.openstack.common import log as logging
 
 if __name__ == '__main__':
-    utils.default_flagfile()
-    flags.FLAGS(sys.argv)
-    logging.setup()
+    flags.parse_args(sys.argv)
+    logging.setup("nova")
     utils.monkey_patch()
     SERVER = service.WSGIService('occiapi')
     service.serve(SERVER)

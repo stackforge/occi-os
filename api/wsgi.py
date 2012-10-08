@@ -27,8 +27,8 @@ import logging
 from nova import flags
 from nova import wsgi
 from nova import context
-from nova import image
 from nova import db
+from nova.image import glance
 from nova.compute import instance_types
 from nova.network import api
 from nova.openstack.common import cfg
@@ -66,9 +66,8 @@ OCCI_OPTS = [
                         default=8787,
                         help="Port OCCI interface will listen on."),
              cfg.StrOpt("occi_custom_location_hostname",
-                        default=None,
-                        help="Override OCCI location hostname with custom value")
-
+                    default=None,
+                    help="Override OCCI location hostname with custom value")
              ]
 
 FLAGS = flags.FLAGS
@@ -223,7 +222,7 @@ class OCCIApplication(occi_wsgi.Application, wsgi.Application):
         information retrieved from glance (shared and user-specific).
         """
         template_schema = 'http://schemas.openstack.org/template/os#'
-        image_service = image.get_default_image_service()
+        image_service = glance.get_default_image_service()
 
         images = image_service.detail(extras['nova_ctx'])
         filter_kernel_and_ram_images = \

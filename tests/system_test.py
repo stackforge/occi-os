@@ -173,6 +173,9 @@ class SystemTest(unittest.TestCase):
 
 
     def setUp(self):
+        """
+        Setup the test.
+        """
         # Get a security token:
         self.token = get_os_token('admin', 'os4all')
         LOG.info('security token is: ' + self.token)

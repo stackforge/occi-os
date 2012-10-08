@@ -40,6 +40,9 @@ class OCCIRegistry(occi_registry.NonePersistentRegistry):
         self.transient = {}
 
     def set_hostname(self, hostname):
+        """
+        Set the hostname.
+        """
         if FLAGS.occi_custom_location_hostname:
             hostname = FLAGS.occi_custom_location_hostname
         super(OCCIRegistry, self).set_hostname(hostname)
@@ -95,7 +98,7 @@ class OCCIRegistry(occi_registry.NonePersistentRegistry):
         """
         # TODO: move to pyssf!
         if self.resources[key].extras is not None and self.resources[key]\
-                                                   .extras != self.get_extras(extras):
+                                            .extras != self.get_extras(extras):
             raise KeyError
         return self.resources[key]
 

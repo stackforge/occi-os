@@ -21,8 +21,9 @@ Storage related glue :-)
 
 import random
 
-from nova import image, exception
+from nova import exception
 from nova import volume
+from nova.image import glance
 
 from occi import exceptions
 
@@ -31,7 +32,7 @@ from nova_glue import vm
 
 VOLUME_API = volume.API()
 
-IMAGE_API = image.get_default_image_service()
+IMAGE_API = glance.get_default_image_service()
 
 
 def create_storage(size, context, name=None, description=None):

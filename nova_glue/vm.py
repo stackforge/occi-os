@@ -109,8 +109,8 @@ def create_vm(entity, context):
         raise AttributeError('Please provide a valid OS Template.')
 
     if resource_template:
-        inst_type = compute.instance_types.get_instance_type_by_name\
-            (resource_template.term)
+        inst_type = compute.instance_types.\
+        get_instance_type_by_name(resource_template.term)
     else:
         inst_type = compute.instance_types.get_default_instance_type()
         msg = ('No resource template was found in the request. '
@@ -190,8 +190,6 @@ def resize_vm(uid, flavor_name, context):
                            **kwargs)
     except exception.FlavorNotFound:
         raise AttributeError('Unable to locate requested flavor.')
-    except exception.CannotResizeToSameSize:
-        raise AttributeError('Resize requires a change in size.')
     except exception.InstanceInvalidState as error:
         raise error
         #raise AttributeError('VM is in an invalid state.')
@@ -387,8 +385,8 @@ def get_vnc(uid, context):
     instance = get_vm(uid, context)
     try:
         console = COMPUTE_API.get_vnc_console(context, instance, 'novnc')
-    except Exception as error:
-        LOG.warn('Console info is not available yet!')
+    except exception.ConsoleTypeInvalid:
+        LOG.warn('Console info is not availabl!')
         return None
     return console
 
@@ -461,8 +459,7 @@ def get_occi_state(uid, context):
     state = 'inactive'
     actions = []
 
-    if instance['vm_state'] in [vm_states.ACTIVE,
-                                vm_states.RESIZING]:
+    if instance['vm_state'] in [vm_states.ACTIVE]:
         state = 'active'
         actions.append(infrastructure.STOP)
         actions.append(infrastructure.SUSPEND)
@@ -474,7 +471,7 @@ def get_occi_state(uid, context):
         state = 'inactive'
         actions.append(infrastructure.START)
     elif instance['vm_state'] in [vm_states.RESCUED,
-                                  vm_states.ERROR, vm_states.SOFT_DELETE,
+                                  vm_states.ERROR,
                                   vm_states.DELETED]:
         state = 'inactive'
 
