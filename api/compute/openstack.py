@@ -117,7 +117,7 @@ class OsComputeActionBackend(backend.ActionBackend):
             entity.attributes['org.openstack.network.floating.ip'] = address
         elif action == openstack.OS_DEALLOC_FLOATING_IP:
             address = entity.attributes['org.openstack.network.floating.ip']
-            net.remove_floating_ip(address, context)
+            net.remove_floating_ip(uid, address, context)
 
             # remove the mixin
             for mixin in entity.mixins:

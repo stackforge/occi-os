@@ -96,7 +96,7 @@ class ComputeBackend(KindBackend, ActionBackend):
         context = extras['nova_ctx']
         instance = vm.get_vm(uid, context)
 
-        LOG.debug('Retrieving an Virtual machine: ', uid)
+        LOG.debug('Retrieving an Virtual machine: ' + repr(uid))
 
         # set state and applicable actions!
         state, actions = vm.get_occi_state(uid, context)
@@ -122,7 +122,7 @@ class ComputeBackend(KindBackend, ActionBackend):
         context = extras['nova_ctx']
         uid = old.attributes['occi.core.id']
 
-        LOG.debug('Updating an Virtual machine: ', uid)
+        LOG.debug('Updating an Virtual machine: ' + repr(uid))
 
         # update title, summary etc.
         if 'occi.core.title' in new.attributes:

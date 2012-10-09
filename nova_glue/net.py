@@ -24,7 +24,7 @@ import logging
 from nova import network
 from nova import exception
 from nova import compute
-
+from nova.compute import utils
 from nova_glue import vm
 
 # Connect to nova :-)
@@ -86,13 +86,13 @@ def add_flaoting_ip_to_vm(uid, attributes, context):
     """
     vm_instance = vm.get_vm(uid, context)
 
-    #cached_nwinfo = compute_utils.get_nw_info_for_instance(vm_instance)
-    #if not cached_nwinfo:
-    #    raise AttributeError('No nw_info cache associated with instance')
+    cached_nwinfo = utils.get_nw_info_for_instance(vm_instance)
+    if not cached_nwinfo:
+        raise AttributeError('No nw_info cache associated with instance')
 
-    #fixed_ips = cached_nwinfo.fixed_ips()
-    #if not fixed_ips:
-    #    raise AttributeError('No fixed ips associated to instance')
+    fixed_ips = cached_nwinfo.fixed_ips()
+    if not fixed_ips:
+        raise AttributeError('No fixed ips associated to instance')
 
     if 'org.openstack.network.floating.pool' not in attributes:
         pool = None
@@ -105,9 +105,9 @@ def add_flaoting_ip_to_vm(uid, attributes, context):
     #    LOG.warn('multiple fixed_ips exist, using the first')
 
     try:
-        # address = fixed_ips[0]['address']
-        COMPUTE_API.associate_floating_ip(context, vm_instance,
-                                          float_address)
+        address = fixed_ips[0]['address']
+        NETWORK_API.associate_floating_ip(context, vm_instance,
+                                          float_address, address)
     except exception.FloatingIpAssociated:
         msg = 'floating ip is already associated'
         raise AttributeError(msg)
@@ -120,7 +120,7 @@ def add_flaoting_ip_to_vm(uid, attributes, context):
     return float_address
 
 
-def remove_floating_ip(address, context):
+def remove_floating_ip(uid, address, context):
     """
     Remove a given address from an VM instance.
 
@@ -128,7 +128,9 @@ def remove_floating_ip(address, context):
     address -- The ip address.
     context -- The os context.
     """
+    vm_instance = vm.get_vm(uid, context)
+
     # TODO: check exception handling!
 
-    NETWORK_API.disassociate_floating_ip(context, address)
+    NETWORK_API.disassociate_floating_ip(context, vm_instance, address)
     NETWORK_API.release_floating_ip(context, address)

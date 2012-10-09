@@ -385,8 +385,8 @@ def get_vnc(uid, context):
     instance = get_vm(uid, context)
     try:
         console = COMPUTE_API.get_vnc_console(context, instance, 'novnc')
-    except exception.ConsoleTypeInvalid:
-        LOG.warn('Console info is not availabl!')
+    except exception.InstanceNotFound:
+        LOG.warn('Console info is not available atm!')
         return None
     return console
 
