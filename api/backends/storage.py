@@ -26,7 +26,7 @@ import uuid
 from occi import backend
 from occi import exceptions
 from occi.extensions import infrastructure
-from nova_glue import vol, vm
+from nova_glue import storage, vm
 
 
 class StorageBackend(backend.KindBackend, backend.ActionBackend):
@@ -42,12 +42,12 @@ class StorageBackend(backend.KindBackend, backend.ActionBackend):
         if 'occi.storage.size' not in entity.attributes:
             raise AttributeError('size attribute not found!')
 
-        new_volume = vol.create_storage(entity.attributes['occi.storage' \
+        new_volume = storage.create_storage(entity.attributes['occi.storage' \
                                                           '.size'], context)
         vol_id = new_volume['id']
 
         # Work around problem that instance is lazy-loaded...
-        new_volume = vol.get_storage(vol_id, context)
+        new_volume = storage.get_storage(vol_id, context)
 
         if new_volume['status'] == 'error':
             raise exceptions.HTTPError(500, 'There was an error creating the '
@@ -67,7 +67,7 @@ class StorageBackend(backend.KindBackend, backend.ActionBackend):
         """
         v_id = entity.attributes['occi.core.id']
 
-        volume = vol.get_storage(v_id, extras['nova_ctx'])
+        volume = storage.get_storage(v_id, extras['nova_ctx'])
 
         entity.attributes['occi.storage.size'] = str(float(volume['size']))
 
@@ -115,7 +115,7 @@ class StorageBackend(backend.KindBackend, backend.ActionBackend):
         context = extras['nova_ctx']
         volume_id = entity.attributes['occi.core.id']
 
-        vol.delete_storage_instance(volume_id, context)
+        storage.delete_storage_instance(volume_id, context)
 
     def action(self, entity, action, attributes, extras):
         """
@@ -160,7 +160,7 @@ class StorageBackend(backend.KindBackend, backend.ActionBackend):
             # occi.core.title, occi.core.summary
             name = 'snapshot name'
             description = 'snapshot description'
-            vol.snapshot_storage_instance(volume_id, name, description,
+            storage.snapshot_storage_instance(volume_id, name, description,
                                           extras['nova_ctx'])
 
         elif action == infrastructure.RESIZE:

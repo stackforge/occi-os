@@ -27,7 +27,7 @@ import logging
 from api.extensions import templates
 
 from nova_glue import vm
-from nova_glue import vol
+from nova_glue import storage
 
 from occi.backend import KindBackend, ActionBackend
 from occi.extensions import infrastructure
@@ -62,7 +62,7 @@ class ComputeBackend(KindBackend, ActionBackend):
         # set some attributes
         entity.attributes['occi.compute.hostname'] = instance['hostname']
         entity.attributes['occi.compute.architecture'] = \
-            vol.get_image_architecture(uid, extras['nova_ctx'])
+            storage.get_image_architecture(uid, extras['nova_ctx'])
         entity.attributes['occi.compute.cores'] = str(instance['vcpus'])
         entity.attributes['occi.compute.speed'] = str(0.0)  # N/A in instance
         value = str(float(instance['memory_mb']) / 1024)
@@ -92,7 +92,7 @@ class ComputeBackend(KindBackend, ActionBackend):
         # set up to date attributes
         entity.attributes['occi.compute.hostname'] = instance['hostname']
         entity.attributes['occi.compute.architecture'] =\
-        vol.get_image_architecture(uid, extras['nova_ctx'])
+        storage.get_image_architecture(uid, extras['nova_ctx'])
         entity.attributes['occi.compute.cores'] = str(instance['vcpus'])
         entity.attributes['occi.compute.speed'] = str(0.0)  # N/A in instance
         value = str(float(instance['memory_mb']) / 1024)
@@ -115,14 +115,12 @@ class ComputeBackend(KindBackend, ActionBackend):
             old.attributes['occi.compute.state'] = 'inactive'
             vm.confirm_resize_vm(uid, context)
             # now update the mixin info
-            # TODO(tmetsch): remove old mixin!!!
             old.mixins.append(mixin)
         elif isinstance(mixin, templates.OsTemplate):
             image_href = mixin.os_id
             vm.rebuild_vm(uid, image_href, context)
             old.attributes['occi.compute.state'] = 'inactive'
-            #now update the mixin info
-            # TODO(tmetsch): remove old mixin!!!
+            # now update the mixin info
             old.mixins.append(mixin)
         else:
             msg = 'Unrecognized mixin. %s' % str(mixin)

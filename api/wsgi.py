@@ -137,8 +137,6 @@ class OCCIApplication(occi_wsgi.Application, wsgi.Application):
         self._refresh_resource_mixins(extras)
         # register/refresh the openstack security groups as Mixins
         self._refresh_security_mixins(extras)
-        # register/refresh the openstack floating IP pools as Mixins
-        self._refresh_floating_ippools(extras)
 
         return self._call_occi(environ, response, nova_ctx=extras['nova_ctx'],
                                                         registry=self.registry)
@@ -233,46 +231,3 @@ class OCCIApplication(occi_wsgi.Application, wsgi.Application):
                     self.registry.get_backend(sec_mix, extras)
                 except AttributeError:
                     self.register_backend(sec_mix, MIXIN_BACKEND)
-
-    def _refresh_floating_ippools(self, extras):
-        """
-        Gets the list of floating ip pools and registers them as mixins.
-        """
-        network_api = api.API()
-        pools = network_api.get_floating_ip_pools(extras['nova_ctx'])
-
-        for pool in pools:
-            pool_mixin = core_model.Mixin(
-         term=pool['name'],
-         scheme='http://schemas.openstack.org/instance/network/pool/floating#',
-         related=[],
-         attributes=None,
-         title="This is a floating IP pool",
-         location='/network/pool/floating/')
-            try:
-                self.registry.get_backend(pool_mixin, extras)
-            except AttributeError:
-                self.register_backend(pool_mixin, MIXIN_BACKEND)
-
-
-def get_net_info(net_attrs):
-    """
-    Gets basic information about the default network.
-    """
-    ctx = context.get_admin_context()
-
-    network_api = api.API()
-    networks = network_api.get_all(ctx)
-
-    if len(networks) > 1:
-        msg = ('There is more that one network.'
-               'Using the first network: %s') % networks[0]['id']
-        LOG.warn(msg)
-
-    net_attrs['occi.network.address'] = networks[0]['cidr']
-    net_attrs['occi.network.label'] = 'public'
-    net_attrs['occi.network.state'] = 'up'
-    net_attrs['occi.network.gateway'] = str(networks[0]['gateway'])
-    net_attrs['occi.network.allocation'] = 'dhcp'
-
-    return net_attrs
