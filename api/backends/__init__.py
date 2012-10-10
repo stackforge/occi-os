@@ -1,3 +1,4 @@
+# coding=utf-8
 # vim: tabstop=4 shiftwidth=4 softtabstop=4
 
 #
@@ -16,5 +17,5 @@
 #    under the License.
 
 """
-Storage related modules.
+Package for all the backends!
 """

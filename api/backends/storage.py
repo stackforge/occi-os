@@ -1,3 +1,4 @@
+# coding=utf-8
 # vim: tabstop=4 shiftwidth=4 softtabstop=4
 
 #
@@ -20,11 +21,12 @@ Backends for the storage resource.
 """
 
 #pylint: disable=R0201,W0232,W0613
+import uuid
 
 from occi import backend
 from occi import exceptions
 from occi.extensions import infrastructure
-from nova_glue import vol
+from nova_glue import vol, vm
 
 
 class StorageBackend(backend.KindBackend, backend.ActionBackend):
@@ -130,7 +132,7 @@ class StorageBackend(backend.KindBackend, backend.ActionBackend):
 
             # By default storage is ONLINE and can not be brought OFFLINE
 
-            msg = ('Online storage action requested resource with id: %s') % \
+            msg = 'Online storage action requested resource with id: %s' % \
                                                             entity.identifier
             raise AttributeError(msg)
 
@@ -140,13 +142,13 @@ class StorageBackend(backend.KindBackend, backend.ActionBackend):
             # self.volume_api.terminate_connection(context, volume, connector)
 
             # By default storage cannot be brought OFFLINE
-            msg = ('Offline storage action requested for resource: %s') % \
+            msg = 'Offline storage action requested for resource: %s' % \
                                                             entity.identifier
             raise AttributeError(msg)
 
         elif action == infrastructure.BACKUP:
             # BACKUP: create a complete copy of the volume.
-            msg = ('Backup action for storage resource with id: %s') % \
+            msg = 'Backup action for storage resource with id: %s' % \
                                                             entity.identifier
             raise AttributeError(msg)
 
@@ -166,6 +168,66 @@ class StorageBackend(backend.KindBackend, backend.ActionBackend):
             # RESIZE: increase, decrease size of volume. Not supported directly
             #         by the API
 
-            msg = ('Resize storage actio requested resource with id: %s') % \
+            msg = 'Resize storage actio requested resource with id: %s' % \
                                                             entity.identifier
             raise AttributeError(msg)
+
+
+def get_inst_to_attach(link):
+    """
+    Gets the compute instance that is to have the storage attached.
+    """
+    if link.target.kind == infrastructure.COMPUTE:
+        uid = link.target.attributes['occi.core.id']
+    elif link.source.kind == infrastructure.COMPUTE:
+        uid = link.source.attributes['occi.core.id']
+    else:
+        raise AttributeError('Id of the VM not found!')
+    return uid
+
+
+def get_vol_to_attach(link):
+    """
+    Gets the storage instance that is to have the compute attached.
+    """
+    if link.target.kind == infrastructure.STORAGE:
+        uid = link.target.attributes['occi.core.id']
+    elif link.source.kind == infrastructure.STORAGE:
+        uid = link.source.attributes['occi.core.id']
+    else:
+        raise AttributeError('Id of the Volume not found!')
+    return uid
+
+
+class StorageLinkBackend(backend.KindBackend):
+    """
+    A backend for the storage links.
+    """
+
+    # TODO: need to implement retrieve so states get updated!!!!
+
+    def create(self, link, extras):
+        """
+        Creates a link from a compute instance to a storage volume.
+        The user must specify what the device id is to be.
+        """
+        context = extras['nova_ctx']
+        instance_id = get_inst_to_attach(link)
+        volume_id = get_vol_to_attach(link)
+        mount_point = link.attributes['occi.storagelink.deviceid']
+
+        vm.attach_volume(instance_id, volume_id, mount_point, context)
+
+        link.attributes['occi.core.id'] = str(uuid.uuid4())
+        link.attributes['occi.storagelink.deviceid'] = \
+                                link.attributes['occi.storagelink.deviceid']
+        link.attributes['occi.storagelink.mountpoint'] = ''
+        link.attributes['occi.storagelink.state'] = 'active'
+
+    def delete(self, link, extras):
+        """
+        Unlinks the the compute from the storage resource.
+        """
+        volume_id = get_vol_to_attach(link)
+        vm.detach_volume(volume_id, extras['nova_ctx'])
+

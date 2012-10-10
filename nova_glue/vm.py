@@ -21,9 +21,6 @@ VM related 'glue' :-)
 
 #pylint: disable=R0914,W0142,R0912,R0915
 
-from api.compute import templates
-from api.extensions import occi_future
-from api.extensions import openstack
 
 from nova import compute, volume
 from nova import exception
@@ -36,6 +33,9 @@ from nova.flags import FLAGS
 from occi import exceptions
 from occi.extensions import infrastructure
 
+from api.extensions import templates
+from api.extensions import os_addon
+
 import logging
 
 # Connection to the nova APIs
@@ -43,7 +43,7 @@ import logging
 COMPUTE_API = compute.API()
 VOLUME_API = volume.API()
 
-LOG = logging.getLogger('nova.api.wsgi.occi.nova_glue.vm')
+LOG = logging.getLogger(__name__)
 
 
 def create_vm(entity, context):
@@ -81,28 +81,9 @@ def create_vm(entity, context):
             resource_template = mixin
         elif isinstance(mixin, templates.OsTemplate):
             os_template = mixin
-        elif mixin == openstack.OS_KEY_PAIR_EXT:
-            attr = 'org.openstack.credentials.publickey.name'
-            key_name = entity.attributes[attr]
-            attr = 'org.openstack.credentials.publickey.data'
-            key_data = entity.attributes[attr]
-        elif mixin == openstack.OS_ADMIN_PWD_EXT:
-            password = entity.attributes['org.openstack.credentials'\
-                                         '.admin_pwd']
-        elif mixin == openstack.OS_ACCESS_IP_EXT:
-            attr = 'org.openstack.network.access.version'
-            if entity.attributes[attr] == 'ipv4':
-                access_ip_v4 = entity.attributes['org.openstack.network'\
-                                                 '.access.ip']
-            elif entity.attributes[attr] == 'ipv6':
-                access_ip_v6 = entity.attributes['org.openstack.network'\
-                                                 '.access.ip']
-            else:
-                raise AttributeError('No ip given within the attributes!')
-
         # Look for security group. If the group is non-existant, the
         # call to create will fail.
-        if occi_future.SEC_GROUP in mixin.related:
+        if os_addon.SEC_GROUP in mixin.related:
             sg_names.append(mixin.term)
 
     if not os_template:
@@ -308,8 +289,7 @@ def restart_vm(uid, method, context):
     except exception.InstanceInvalidState:
         raise exceptions.HTTPError(406, 'VM is in an invalid state.')
     except Exception as error:
-        msg = ("Error in reboot %s") % error
-        raise exceptions.HTTPError(500, msg)
+        raise exceptions.HTTPError(500, 'Error in reboot %s' % error)
 
 
 def attach_volume(instance_id, volume_id, mount_point, context):
@@ -441,6 +421,12 @@ def get_vm(uid, context):
         raise exceptions.HTTPError(404, 'VM not found!')
     return instance
 
+def get_vms(context):
+    """
+    Retrieve all VMs in a given context.
+    """
+    tmp = COMPUTE_API.get_all(context)
+    return tmp
 
 def get_occi_state(uid, context):
     """

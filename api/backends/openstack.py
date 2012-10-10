@@ -1,3 +1,4 @@
+# coding=utf-8
 # vim: tabstop=4 shiftwidth=4 softtabstop=4
 
 #
@@ -21,53 +22,12 @@ The compute resource backend for OpenStack.
 
 #pylint: disable=W0232,R0201
 import random
-from occi import backend, exceptions
+from occi import backend
+from occi import exceptions
 
-from api.extensions import openstack
-from api.extensions import occi_future
+from api.extensions import os_addon
 
 from nova_glue import vm, security
-from nova_glue import net
-
-
-def get_extensions():
-    """
-    Retrieve the OS specific extensions.
-    """
-
-    return  [
-            {
-            'categories': [openstack.OS_CHG_PWD,
-                           openstack.OS_REVERT_RESIZE,
-                           openstack.OS_CONFIRM_RESIZE,
-                           openstack.OS_CREATE_IMAGE,
-                           openstack.OS_ALLOC_FLOATING_IP,
-                           openstack.OS_DEALLOC_FLOATING_IP, ],
-            'handler': OsComputeActionBackend(),
-            },
-            {
-            'categories': [openstack.OS_KEY_PAIR_EXT,
-                           openstack.OS_ADMIN_PWD_EXT,
-                           openstack.OS_ACCESS_IP_EXT,
-                           openstack.OS_FLOATING_IP_EXT, ],
-            'handler': backend.MixinBackend(),
-            },
-            {
-            'categories': [occi_future.CONSOLE_LINK,
-                           occi_future.SSH_CONSOLE,
-                           occi_future.VNC_CONSOLE, ],
-            'handler': backend.KindBackend(),
-            },
-            {
-            'categories': [occi_future.SEC_RULE, ],
-            'handler': SecurityRuleBackend(),
-            },
-            {
-            'categories': [occi_future.SEC_GROUP, ],
-            'handler': SecurityGroupBackend(),
-            },
-    ]
-
 
 class OsComputeActionBackend(backend.ActionBackend):
     """
@@ -81,7 +41,7 @@ class OsComputeActionBackend(backend.ActionBackend):
         context = extras['nova_ctx']
         uid = entity.attributes['occi.core.id']
 
-        if action == openstack.OS_CHG_PWD:
+        if action == os_addon.OS_CHG_PWD:
             if 'org.openstack.credentials.admin_pwd' not in attributes:
                 msg = 'org.openstack.credentials.admin_pwd was not supplied'\
                       ' in the request.'
@@ -89,41 +49,12 @@ class OsComputeActionBackend(backend.ActionBackend):
 
             new_password = attributes['org.openstack.credentials.admin_pwd']
             vm.set_password_for_vm(uid, new_password, context)
-        elif action == openstack.OS_REVERT_RESIZE:
-            vm.revert_resize_vm(uid, context)
-            entity.attributes['occi.compute.state'] = 'inactive'
-        elif action == openstack.OS_CONFIRM_RESIZE:
-            vm.confirm_resize_vm(uid, context)
-            entity.attributes['occi.compute.state'] = 'active'
-        elif action == openstack.OS_CREATE_IMAGE:
+        elif action == os_addon.OS_CREATE_IMAGE:
             if 'org.openstack.snapshot.image_name' not in attributes:
                 raise AttributeError('Missing image name')
 
             image_name = attributes['org.openstack.snapshot.image_name']
             vm.snapshot_vm(uid, image_name, context)
-        elif action == openstack.OS_ALLOC_FLOATING_IP:
-            for mixin in entity.mixins:
-                if mixin == openstack.OS_FLOATING_IP_EXT:
-                    #TODO(dizz): implement support for multiple floating ips
-                    #            needs support in pyssf for URI in link
-                    raise AttributeError('There is already a floating IP '
-                                         'assigned to the VM')
-
-            address = net.add_flaoting_ip_to_vm(uid, attributes, context)
-
-            # once the address is allocated we need to reflect that fact
-            # on the resource holding it.
-            entity.mixins.append(openstack.OS_FLOATING_IP_EXT)
-            entity.attributes['org.openstack.network.floating.ip'] = address
-        elif action == openstack.OS_DEALLOC_FLOATING_IP:
-            address = entity.attributes['org.openstack.network.floating.ip']
-            net.remove_floating_ip(uid, address, context)
-
-            # remove the mixin
-            for mixin in entity.mixins:
-                if mixin == openstack.OS_FLOATING_IP_EXT:
-                    entity.mixins.remove(mixin)
-                    entity.attributes.pop('org.openstack.network.floating.ip')
         else:
             raise AttributeError('Not an applicable action.')
 
@@ -182,7 +113,7 @@ class SecurityRuleBackend(backend.KindBackend):
 
         if security_group_rule_exists(security_group, sg_rule):
             #This rule already exists in group
-            msg = ('This rule already exists in group. %s') %\
+            msg = 'This rule already exists in group. %s' %\
                   str(security_group)
             raise AttributeError(msg)
 
@@ -209,9 +140,9 @@ def make_sec_rule(entity, sec_grp_id):
     # TODO: add some checks for missing attributes!
 
     name = random.randrange(0, 99999999)
-    sg_rule = {'id': name}
+    sg_rule = {'id': name,
+               'parent_group_id': sec_grp_id}
     entity.attributes['occi.core.id'] = str(sg_rule['id'])
-    sg_rule['parent_group_id'] = sec_grp_id
     prot = \
     entity.attributes['occi.network.security.protocol'].lower().strip()
     if prot in ('tcp', 'udp', 'icmp'):
@@ -252,7 +183,7 @@ def get_sec_mixin(entity):
     sec_mixin_present = 0
     sec_mixin = None
     for mixin in entity.mixins:
-        if occi_future.SEC_GROUP in mixin.related:
+        if os_addon.SEC_GROUP in mixin.related:
             sec_mixin = mixin
             sec_mixin_present += 1
 

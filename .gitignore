@@ -3,6 +3,7 @@
 # Packages
 *.egg
 *.egg-info
+*.old
 dist
 build
 eggs

@@ -1,3 +1,4 @@
+# coding=utf-8
 # vim: tabstop=4 shiftwidth=4 softtabstop=4
 
 #
@@ -36,18 +37,9 @@ class OsTemplate(core_model.Mixin):
         self.os_id = os_id
 
 
-OS_TEMPLATE = OsTemplate('http://schemas.ogf.org/occi/infrastructure#',
-                                                                    'os_tpl')
-
-
 class ResourceTemplate(core_model.Mixin):
     """
-    Represents the Resource Template mechanism as per OCCI specification.
-    An Resource template is equivocal to a flavor in OpenStack. Implemented
-    as such for consistency with OsTemplate.
+    Here to make identificaiton of template type easier in backends.
     """
+
     pass
-
-
-RES_TEMPLATE = ResourceTemplate('http://schemas.ogf.org/occi/infrastructure#',
-                                                                'resource_tpl')

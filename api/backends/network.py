@@ -1,3 +1,4 @@
+# coding=utf-8
 # vim: tabstop=4 shiftwidth=4 softtabstop=4
 
 #
@@ -61,4 +62,44 @@ class IpNetworkBackend(backend.MixinBackend):
         """
         Currently unsupported.
         """
+        raise AttributeError('Currently not supported.')
+
+
+class IpNetworkInterfaceBackend(backend.MixinBackend):
+    """
+    A mixin backend for the IpNetworkingInterface.
+    """
+
+    def create(self, link, extras):
+        """
+        Can't create in nova so we don't either.
+        """
+        raise AttributeError('Currently not supported.')
+
+
+class NetworkInterfaceBackend(backend.KindBackend):
+    """
+    A backend for network links.
+    """
+
+    def create(self, link, extras):
+        """
+        As nova does not support creation of L2 networks we don't.
+        """
+        # implement with Quantum
+        # TODO: add floating ip support
+        raise AttributeError('Currenlty not supported.')
+
+    def update(self, old, new, extras):
+        """
+        Allows for the update of network links.
+        """
+        #L8R: here we associate a security group
+        #L8R: here we could possibly assign a static (floating) ip - request
+        #     must include a ipnetworkinterface mixin
+        # make sure the link has an IP mixin
+        # get a reference to the compute instance
+        # get the security group
+        # associate the security group with the compute instance
+
         raise AttributeError('Currently not supported.')

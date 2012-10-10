@@ -40,6 +40,7 @@ which point to this function call (<module name>:function).
 from api import wsgi
 
 
+#noinspection PyUnusedLocal
 def main(global_config, **settings):
     """
     This is the entry point for paste into the OCCI OS world.
