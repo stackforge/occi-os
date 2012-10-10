@@ -143,3 +143,9 @@ def get_storage(uid, context):
     except exception.NotFound:
         raise exceptions.HTTPError(404, 'Volume not found!')
     return instance
+
+def get_storages(context):
+    """
+    Retrieve all storage entities from user.
+    """
+    return VOLUME_API.get_all(context)

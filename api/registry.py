@@ -56,27 +56,71 @@ class OCCIRegistry(occi_registry.NonePersistentRegistry):
         """
         Retrieve a single resource.
         """
-        if extras is not None:
-            context = extras['nova_ctx']
-            iden = key[key.rfind('/') + 1:]
-            vm_desc = vm.get_vm(iden, context)
+        context = extras['nova_ctx']
+        iden = key[key.rfind('/') + 1:]
 
-            if (key, context.user_id) in self.cache:
-                entity = self._update_occi_compute(key, extras)
+        vms = vm.get_vms(context)
+        vm_res_ids = [item['uuid'] for item in vms]
+        stors = storage.get_storages(context)
+        stor_res_ids = [item['id'] for item in stors]
+
+        if (key, context.user_id) in self.cache:
+            # I have seen it - need to update or delete if gone in OS!
+            # I have already seen it
+            cached_item = self.cache[(key, context.user_id)]
+            if not iden in vm_res_ids and cached_item.kind ==\
+               infrastructure.COMPUTE:
+                # it was delete in OS -> remove links, cache + KeyError!
+                # can delete it because it was my item!
+                for link in cached_item.links:
+                    self.cache.pop((link.identifier, repr(extras)))
+                self.cache.pop((key, repr(extras)))
+                raise KeyError
+            if not iden in stor_res_ids and cached_item.kind ==\
+               infrastructure.STORAGE:
+                # it was delete in OS -> remove from cache + KeyError!
+                # can delete it because it was my item!
+                self.cache.pop((key, repr(extras)))
+                raise KeyError
+            elif iden in vm_res_ids:
+                # it also exists in OS -> update it (take links, mixins
+                # from cached one)
+                self._update_occi_compute(cached_item, extras)
+                return cached_item
+            elif iden in stor_res_ids:
+                # it also exists in OS -> update it!
+                self._update_occi_storage(cached_item, extras)
+                return cached_item
             else:
-                entity = self._construct_occi_compute(iden, [vm_desc], extras)
+                # return cached item (links)
+                return cached_item
+        elif (key, None) in self.cache:
+            # return shared entities from cache!
+            return self.cache[(key, None)]
         else:
-            # shared resources - look in cache!
-            entity = self.cache[(key, None)]
+            # construct it.
+            if iden in vm_res_ids:
+                # create new & add to cache!
+                return self._construct_occi_compute(iden, vms, extras)
+            elif iden in stor_res_ids:
+                return self._construct_occi_storage(iden, stors, extras)
 
-        return entity
+            else:
+                # doesn't exist!
+                raise KeyError
 
     def get_resource_keys(self, extras):
         """
         Retrieve the keys of all resources.
         """
         keys = []
-        # TODO: implement this!
+        for item in self.cache.values():
+            if item.extras is not None and item.extras != extras:
+                # filter out items not belonging to this user!
+                continue
+            else:
+                # add identifier
+                keys.append(item.identifier)
 
         return keys
 
@@ -85,30 +129,71 @@ class OCCIRegistry(occi_registry.NonePersistentRegistry):
         Retrieve a set of resources.
         """
         context = extras['nova_ctx']
-        result = [self.pub_net, self.adm_net]
+        result = []
 
         vms = vm.get_vms(context)
-        res_ids = [item['uuid'] for item in vms]
+        vm_res_ids = [item['uuid'] for item in vms]
 
-        for item in res_ids:
-            if (infrastructure.COMPUTE.location + item,
-                context.user_id) in self.cache:
-                entity = self._update_occi_compute(infrastructure.COMPUTE
-                .location + item, extras)
-                result.append(entity)
-                result.extend(entity.links)
+        stors = storage.get_storages(context)
+        stor_res_ids = [item['id'] for item in stors]
+
+        for item in self.cache.values():
+            if item.extras is not None and item.extras != extras:
+                # filter out items not belonging to this user!
+                continue
+            item_id = item.identifier[item.identifier.rfind('/') + 1:]
+            if item.extras is None:
+                # add to result set
+                result.append(item)
+            elif item_id in vm_res_ids and item.kind == infrastructure.COMPUTE:
+                # check & update (take links, mixins from cache)
+                # add compute and it's links to result
+                self._update_occi_compute(item, extras)
+                result.append(item)
+                result.extend(item.links)
+            elif item_id not in vm_res_ids and item.kind == infrastructure.COMPUTE:
+                # remove item and it's links from cache!
+                for link in item.links:
+                    self.cache.pop((link.identifier, repr(extras)))
+                self.cache.pop((item.identifier, repr(extras)))
+            elif item_id in stor_res_ids and item.kind == infrastructure.STORAGE:
+                # check & update (take links, mixins from cache)
+                # add compute and it's links to result
+                self._update_occi_storage(item, extras)
+                result.append(item)
+            elif item_id not in stor_res_ids and item.kind == infrastructure.STORAGE:
+                # remove item
+                self.cache.pop((item.identifier, repr(extras)))
+        for item in vms:
+            if (infrastructure.COMPUTE.location + item['uuid'],
+                repr(extras)) in self.cache:
+                continue
             else:
-                entity = self._construct_occi_compute(item, vms, extras)
+                # construct (with links and mixins and add to cache!
+                # add compute and it's linke to result
+                entity = self._construct_occi_compute(item['uuid'], vms,
+                    extras)
                 result.append(entity)
                 result.extend(entity.links)
+        for item in stors:
+            if (infrastructure.STORAGE.location + item['id'],
+                repr(extras)) in self.cache:
+                continue
+            else:
+                # construct (with links and mixins and add to cache!
+                # add compute and it's linke to result
+                entity = self._construct_occi_storage(item['id'], stors,
+                    extras)
+                result.append(entity)
 
         return result
 
     # Not part of parent
 
-    def _update_occi_compute(self, identifier, extras):
-        context = extras['nova_ctx']
-        return self.cache[identifier, context.user_id]
+    def _update_occi_compute(self, entity, extras):
+        # TODO: implement update of mixins and links (remove old mixins and
+        # links)!
+        return entity
 
     def _construct_occi_compute(self, identifier, vms, extras):
         """
@@ -141,6 +226,29 @@ class OCCIRegistry(occi_registry.NonePersistentRegistry):
         entity.extras = extras
         self.cache[(entity.identifier, context.user_id)] = entity
 
+        return entity
+
+    def _update_occi_storage(self, entity, extras):
+        # TODO: is there sth to do here??
+        # links)!
+        return entity
+
+    def _construct_occi_storage(self, identifier, vms, extras):
+        """
+        Construct a OCCI storage instance.
+
+        Adds it to the cache too!
+        """
+        context = extras['nova_ctx']
+
+        # id, display_name, size, status
+        iden = infrastructure.STORAGE.location + identifier
+        entity = core_model.Resource(iden, infrastructure.STORAGE, [])
+
+        # core.id and cache it!
+        entity.attributes['occi.core.id'] = identifier
+        entity.extras = extras
+        self.cache[(entity.identifier, context.user_id)] = entity
         return entity
 
     def _setup_network(self):
