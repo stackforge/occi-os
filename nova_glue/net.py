@@ -37,43 +37,22 @@ LOG = logging.getLogger('nova.api.wsgi.occi.nova_glue.net')
 
 def get_adapter_info(uid, context):
     """
-    Extracts the VMs network adapter information: interface name,
-    IP address, gateway and mac address.
+    Extracts the VMs network adapter information.
 
     uid -- Id of the VM.
     context -- The os context.
     """
     vm_instance = vm.get_vm(uid, context)
 
-    # TODO(dizz): currently this assumes one adapter on the VM.
-    # It's likely that this will not be the case when using Quantum
+    result = {'public':[], 'admin':[]}
+    net_info = NETWORK_API.get_instance_nw_info(context, vm_instance)[0]
 
-    vm_net_info = {'vm_iface': '', 'address': '', 'gateway': '', 'mac': '',
-                   'allocation': ''}
+    tmp = net_info['network']['subnets'][0]['ips'][0]
+    for item in tmp['floating_ips']:
+        result['public'].append({'ip': item['address']})
+    result['admin'].append({'ip': tmp['address']})
 
-    temp = NETWORK_API.get_instance_nw_info(context, vm_instance)
-
-    # catches an odd error whereby no network info is returned back
-    if len(temp) <= 0:
-        LOG.warn('No network info was returned either live or cached.')
-        return vm_net_info
-
-    vm_net_info['vm_iface'] = temp[0]['network']['meta']['bridge_interface']
-
-    # OS-specific if a VM is stopped it has no IP address
-    if len(temp[0]['network']['subnets'][0]['ips']) > 0:
-        adr = temp[0]['network']['subnets'][0]['ips'][0]['address']
-        vm_net_info['address'] = adr
-    else:
-        vm_net_info['address'] = ''
-    gateway = temp[0]['network']['subnets'][0]['gateway']['address']
-    vm_net_info['gateway'] = gateway
-    vm_net_info['mac'] = temp[0]['address']
-    if temp[0]['network']['subnets'][0]['ips'][0]['type'] == 'fixed':
-        vm_net_info['allocation'] = 'static'
-    else:
-        vm_net_info['allocation'] = 'dynamic'
-    return vm_net_info
+    return result
 
 
 def add_flaoting_ip_to_vm(uid, attributes, context):

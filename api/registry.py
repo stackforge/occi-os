@@ -24,12 +24,14 @@ OCCI registry
 #pylint: disable=R0201,E1002
 import uuid
 from nova import flags
+from nova.compute import utils
+from nova.openstack import common
 
 from occi import registry as occi_registry, exceptions
 from occi import core_model
 from occi.extensions import infrastructure
 
-from nova_glue import vm, storage
+from nova_glue import vm, storage, net
 
 class OCCIRegistry(occi_registry.NonePersistentRegistry):
     """
@@ -148,7 +150,7 @@ class OCCIRegistry(occi_registry.NonePersistentRegistry):
         stor_res_ids = [item['id'] for item in stors]
 
         for item in self.cache.values():
-            if item.extras is not None and item.extras['owner'] != context\
+            if item.extras is not None and item.extras['user_id'] != context\
             .user_id:
                 # filter out items not belonging to this user!
                 continue
@@ -214,21 +216,42 @@ class OCCIRegistry(occi_registry.NonePersistentRegistry):
         result = []
         context = extras['nova_ctx']
 
+        instance = vm.get_vm(identifier, context)
+
         # 1. get identifier
         iden = infrastructure.COMPUTE.location + identifier
         entity = core_model.Resource(iden, infrastructure.COMPUTE, [])
 
         # 2. os and res templates
-        flavor_name = vm.get_vm(identifier, context)['instance_type'].name
+        flavor_name = instance['instance_type'].name
         res_tmp = self.get_category('/' + flavor_name + '/', extras)
         entity.mixins.append(res_tmp)
 
-        os_id = vm.get_vm(identifier, context)['image_ref']
+        os_id = instance['image_ref']
         image_name = storage.get_image(os_id, context)['name']
         os_tmp = self.get_category('/' + image_name + '/', extras)
         entity.mixins.append(os_tmp)
 
         # 3. network links & get links from cache!
+        net_links = net.get_adapter_info(identifier, context)
+        for item in net_links['public']:
+            link = core_model.Link(infrastructure.NETWORKINTERFACE.location +
+                                   str(uuid.uuid4()),
+                infrastructure.NETWORKINTERFACE,
+                [infrastructure.IPNETWORKINTERFACE], entity, self.pub_net)
+            link.extras = self.get_extras(extras)
+            entity.links.append(link)
+            result.append(link)
+            self.cache[(link.identifier, context.user_id)] = link
+        for item in net_links['admin']:
+            link = core_model.Link(infrastructure.NETWORKINTERFACE.location +
+                                   str(uuid.uuid4()),
+                infrastructure.NETWORKINTERFACE,
+                [infrastructure.IPNETWORKINTERFACE], entity, self.adm_net)
+            link.extras = self.get_extras(extras)
+            entity.links.append(link)
+            result.append(link)
+            self.cache[(link.identifier, context.user_id)] = link
 
         # core.id and cache it!
         entity.attributes['occi.core.id'] = identifier
