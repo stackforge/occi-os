@@ -407,7 +407,6 @@ def confirm_resize_vm(uid, context):
     except Exception:
         raise AttributeError('Error in confirm-resize.')
 
-
 def get_vm(uid, context):
     """
     Retrieve an VM instance from nova.
@@ -425,7 +424,8 @@ def get_vms(context):
     """
     Retrieve all VMs in a given context.
     """
-    tmp = COMPUTE_API.get_all(context)
+    opts = {'deleted': False}
+    tmp = COMPUTE_API.get_all(context, search_opts=opts)
     return tmp
 
 def get_occi_state(uid, context):
