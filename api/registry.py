@@ -172,11 +172,11 @@ class OCCIRegistry(occi_registry.NonePersistentRegistry):
             elif item_id not in vm_res_ids and item.kind == infrastructure.COMPUTE:
                 # remove item and it's links from cache!
                 for link in item.links:
-                    self.cache.pop((link.identifier, repr(extras)))
-                self.cache.pop((item.identifier, repr(extras)))
+                    self.cache.pop((link.identifier, item.extras['user_id']))
+                self.cache.pop((item.identifier, item.extras['user_id']))
             elif item_id not in stor_res_ids and item.kind == infrastructure.STORAGE:
                 # remove item
-                self.cache.pop((item.identifier, repr(extras)))
+                self.cache.pop((item.identifier, item.extras['user_id']))
         for item in vms:
             if (infrastructure.COMPUTE.location + item['uuid'],
                 context.user_id) in self.cache:
@@ -234,24 +234,13 @@ class OCCIRegistry(occi_registry.NonePersistentRegistry):
 
         # 3. network links & get links from cache!
         net_links = net.get_adapter_info(identifier, context)
+        print net_links
         for item in net_links['public']:
-            link = core_model.Link(infrastructure.NETWORKINTERFACE.location +
-                                   str(uuid.uuid4()),
-                infrastructure.NETWORKINTERFACE,
-                [infrastructure.IPNETWORKINTERFACE], entity, self.pub_net)
-            link.extras = self.get_extras(extras)
-            entity.links.append(link)
+            link = self._construct_network_link(entity, self.pub_net, extras)
             result.append(link)
-            self.cache[(link.identifier, context.user_id)] = link
         for item in net_links['admin']:
-            link = core_model.Link(infrastructure.NETWORKINTERFACE.location +
-                                   str(uuid.uuid4()),
-                infrastructure.NETWORKINTERFACE,
-                [infrastructure.IPNETWORKINTERFACE], entity, self.adm_net)
-            link.extras = self.get_extras(extras)
-            entity.links.append(link)
+            link = self._construct_network_link(entity, self.adm_net, extras)
             result.append(link)
-            self.cache[(link.identifier, context.user_id)] = link
 
         # core.id and cache it!
         entity.attributes['occi.core.id'] = identifier
@@ -326,3 +315,16 @@ class OCCIRegistry(occi_registry.NonePersistentRegistry):
                                    'occi.networkinterface.allocation': 'dynamic'}
         self.cache[(self.adm_net.identifier, None)] = self.adm_net
         self.cache[(self.pub_net.identifier, None)] = self.pub_net
+
+    def _construct_network_link(self, source, target, extras):
+        """
+        Construct a network link and add to cache!
+        """
+        link = core_model.Link(infrastructure.NETWORKINTERFACE.location +
+                               str(uuid.uuid4()),
+            infrastructure.NETWORKINTERFACE,
+            [infrastructure.IPNETWORKINTERFACE], source, target)
+        link.extras = self.get_extras(extras)
+        source.links.append(link)
+        self.cache[(link.identifier, extras['nova_ctx'].user_id)] = link
+        return link

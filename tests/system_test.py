@@ -199,6 +199,7 @@ class SystemTest(unittest.TestCase):
         # list computes
         if 'http://' + OCCI_HOST + vm_location not in list_nodes(self.token,
             '/compute/'):
+            print list_nodes(self.token, '/compute/')
             LOG.error('VM should be listed!')
 
         # wait

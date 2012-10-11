@@ -58,6 +58,7 @@ class ComputeBackend(KindBackend, ActionBackend):
         context = extras['nova_ctx']
         instance = vm.create_vm(entity, context)
         uid = instance['uuid']
+        entity.identifier = '/compute/' + uid
 
         # set some attributes
         entity.attributes['occi.compute.hostname'] = instance['hostname']
