@@ -23,6 +23,7 @@ OCCI registry
 #R0201:method could be func.E1002:old style obj
 #pylint: disable=R0201,E1002
 import uuid
+from nova import flags
 
 from occi import registry as occi_registry, exceptions
 from occi import core_model
@@ -41,9 +42,14 @@ class OCCIRegistry(occi_registry.NonePersistentRegistry):
         self._setup_network()
 
     def get_extras(self, extras):
-        ctx = extras['nova_ctx']
-        obj = {'owner': ctx.user_id, 'nova_ctx': ctx}
-        return obj
+        """
+        Get data which is encapsulated in the extras.
+        """
+        sec_extras = None
+        if extras is not None:
+            sec_extras = {'user_id': extras['nova_ctx'].user_id,
+                          'project_id': extras['nova_ctx'].project_id}
+        return sec_extras
 
     def add_resource(self, key, resource, extras):
         """
@@ -234,7 +240,6 @@ class OCCIRegistry(occi_registry.NonePersistentRegistry):
 
     def _update_occi_storage(self, entity, extras):
         # TODO: is there sth to do here??
-        # links)!
         return entity
 
     def _construct_occi_storage(self, identifier, stors, extras):
@@ -253,8 +258,11 @@ class OCCIRegistry(occi_registry.NonePersistentRegistry):
 
         # create links on VM resources
         if stor['status'] == 'in-use':
-            source = self.get_resource(infrastructure.COMPUTE.location + str(stor['instance_uuid']), extras)
-            link = core_model.Link(infrastructure.STORAGELINK.location + str(uuid.uuid4()), infrastructure.STORAGELINK, [], source, entity)
+            source = self.get_resource(infrastructure.COMPUTE.location +
+                                       str(stor['instance_uuid']), extras)
+            link = core_model.Link(infrastructure.STORAGELINK.location +
+                                   str(uuid.uuid4()),
+                infrastructure.STORAGELINK, [], source, entity)
             link.extras = self.get_extras(extras)
             source.links.append(link)
             result.append(link)
