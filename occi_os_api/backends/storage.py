@@ -26,7 +26,7 @@ import uuid
 from occi import backend
 from occi import exceptions
 from occi.extensions import infrastructure
-from nova_glue import storage, vm
+from occi_os_api.nova_glue import storage, vm
 
 
 class StorageBackend(backend.KindBackend, backend.ActionBackend):
@@ -223,6 +223,15 @@ class StorageLinkBackend(backend.KindBackend):
                                 link.attributes['occi.storagelink.deviceid']
         link.attributes['occi.storagelink.mountpoint'] = ''
         link.attributes['occi.storagelink.state'] = 'active'
+
+    def retrieve(self, entity, extras):
+        """
+        Get most up to date attribute informations.
+        """
+        # occi.storagelink.deviceid
+        # occi.storagelink.mountpoint
+        # occi.storagelink.state
+        pass
 
     def delete(self, link, extras):
         """

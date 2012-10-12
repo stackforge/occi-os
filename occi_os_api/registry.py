@@ -23,15 +23,12 @@ OCCI registry
 #R0201:method could be func.E1002:old style obj
 #pylint: disable=R0201,E1002
 import uuid
-from nova import flags
-from nova.compute import utils
-from nova.openstack import common
 
-from occi import registry as occi_registry, exceptions
+from occi import registry as occi_registry
 from occi import core_model
 from occi.extensions import infrastructure
 
-from nova_glue import vm, storage, net
+from occi_os_api.nova_glue import vm, storage, net
 
 class OCCIRegistry(occi_registry.NonePersistentRegistry):
     """
@@ -234,12 +231,13 @@ class OCCIRegistry(occi_registry.NonePersistentRegistry):
 
         # 3. network links & get links from cache!
         net_links = net.get_adapter_info(identifier, context)
-        print net_links
         for item in net_links['public']:
-            link = self._construct_network_link(entity, self.pub_net, extras)
+            link = self._construct_network_link(item, entity, self.pub_net,
+                extras)
             result.append(link)
         for item in net_links['admin']:
-            link = self._construct_network_link(entity, self.adm_net, extras)
+            link = self._construct_network_link(item, entity, self.adm_net,
+                extras)
             result.append(link)
 
         # core.id and cache it!
@@ -316,7 +314,7 @@ class OCCIRegistry(occi_registry.NonePersistentRegistry):
         self.cache[(self.adm_net.identifier, None)] = self.adm_net
         self.cache[(self.pub_net.identifier, None)] = self.pub_net
 
-    def _construct_network_link(self, source, target, extras):
+    def _construct_network_link(self, net_desc, source, target, extras):
         """
         Construct a network link and add to cache!
         """
@@ -324,6 +322,14 @@ class OCCIRegistry(occi_registry.NonePersistentRegistry):
                                str(uuid.uuid4()),
             infrastructure.NETWORKINTERFACE,
             [infrastructure.IPNETWORKINTERFACE], source, target)
+        link.attributes = {
+            'occi.networkinterface.interface': net_desc['interface'],
+            'occi.networkinterface.mac': net_desc['mac'],
+            'occi.networkinterface.state': net_desc['state'],
+            'occi.networkinterface.address': net_desc['address'],
+            'occi.networkinterface.gateway': net_desc['gateway'],
+            'occi.networkinterface.allocation': net_desc['allocation']
+        }
         link.extras = self.get_extras(extras)
         source.links.append(link)
         self.cache[(link.identifier, extras['nova_ctx'].user_id)] = link

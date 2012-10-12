@@ -30,7 +30,7 @@ Network resource backend.
 #             implement actions
 #             implement updates
 
-# Also see nova/api/openstack/compute/contrib/networks.py
+# Also see nova/occi_os_api/openstack/compute/contrib/networks.py
 
 from occi import backend
 
@@ -86,7 +86,6 @@ class NetworkInterfaceBackend(backend.KindBackend):
         """
         As nova does not support creation of L2 networks we don't.
         """
-        # implement with Quantum
         # TODO: add floating ip support
         raise AttributeError('Currenlty not supported.')
 
@@ -94,12 +93,4 @@ class NetworkInterfaceBackend(backend.KindBackend):
         """
         Allows for the update of network links.
         """
-        #L8R: here we associate a security group
-        #L8R: here we could possibly assign a static (floating) ip - request
-        #     must include a ipnetworkinterface mixin
-        # make sure the link has an IP mixin
-        # get a reference to the compute instance
-        # get the security group
-        # associate the security group with the compute instance
-
         raise AttributeError('Currently not supported.')

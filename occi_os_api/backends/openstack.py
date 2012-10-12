@@ -25,9 +25,10 @@ import random
 from occi import backend
 from occi import exceptions
 
-from api.extensions import os_addon
+from occi_os_api.extensions import os_addon
 
-from nova_glue import vm, security
+from occi_os_api.nova_glue import vm
+from occi_os_api.nova_glue import security
 
 class OsComputeActionBackend(backend.ActionBackend):
     """

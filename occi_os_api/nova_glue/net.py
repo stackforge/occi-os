@@ -25,14 +25,14 @@ from nova import network
 from nova import exception
 from nova import compute
 from nova.compute import utils
-from nova_glue import vm
+from occi_os_api.nova_glue import vm
 
 # Connect to nova :-)
 
 NETWORK_API = network.API()
 COMPUTE_API = compute.API()
 
-LOG = logging.getLogger('nova.api.wsgi.occi.nova_glue.net')
+LOG = logging.getLogger('nova.occi_os_api.wsgi.occi.nova_glue.net')
 
 
 def get_adapter_info(uid, context):
@@ -46,11 +46,23 @@ def get_adapter_info(uid, context):
 
     result = {'public':[], 'admin':[]}
     net_info = NETWORK_API.get_instance_nw_info(context, vm_instance)[0]
+    gw = net_info['network']['subnets'][0]['gateway']['address']
+    mac = net_info['address']
 
     tmp = net_info['network']['subnets'][0]['ips'][0]
     for item in tmp['floating_ips']:
-        result['public'].append({'ip': item['address']})
-    result['admin'].append({'ip': tmp['address']})
+        result['public'].append({'interface':'eth0',
+                                 'mac':'aa:bb:cc:dd:ee:ff',
+                                 'state': 'active',
+                                 'address': item['address'],
+                                 'gateway': '0.0.0.0',
+                                 'allocation': 'static'})
+    result['admin'].append({'interface':'eth0',
+                            'mac': mac,
+                            'state': 'active',
+                            'address': tmp['address'],
+                            'gateway': gw,
+                            'allocation': 'static'})
 
     return result
 

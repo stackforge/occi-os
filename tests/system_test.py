@@ -14,7 +14,7 @@
 #    limitations under the License.
 
 """
-Will test the OS api against a local running instance.
+Will test the OS occi_os_api against a local running instance.
 """
 
 #pylint: disable=W0102,C0103,R0904

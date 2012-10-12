@@ -28,7 +28,7 @@ from nova.image import glance
 from occi import exceptions
 
 # Connection to the nova APIs
-from nova_glue import vm
+from occi_os_api.nova_glue import vm
 
 VOLUME_API = volume.API()
 

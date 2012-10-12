@@ -45,14 +45,14 @@ setup(
     url='http://intel.com',
     license='Apache License, Version 2.0',
     include_package_data=True,
-    packages=['api','api.compute','api.network','api.storage',
-              'api.extensions', 'nova_glue'],
+    packages=['occi_os_api','occi_os_api.backends','occi_os_api.extensions',
+              'occi_os_api.nova_glue'],
     zip_safe=False,
     install_requires=[
         'setuptools',
         ],
     entry_points='''
       [paste.app_factory]
-      occi_app = api:main
+      occi_app = occi_os_api:main
       ''',
 )

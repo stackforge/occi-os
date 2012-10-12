@@ -34,12 +34,12 @@ from nova.compute import instance_types
 from nova.network import api
 from nova.openstack.common import cfg
 
-from api import registry
-from api.backends import compute
-from api.backends import network
-from api.backends import storage
-from api.extensions import templates
-from api.extensions import os_addon
+from occi_os_api import registry
+from occi_os_api.backends import compute
+from occi_os_api.backends import network
+from occi_os_api.backends import storage
+from occi_os_api.extensions import templates
+from occi_os_api.extensions import os_addon
 
 from occi import backend
 from occi import core_model
