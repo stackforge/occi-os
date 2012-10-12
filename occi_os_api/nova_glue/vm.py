@@ -28,6 +28,7 @@ from nova import utils
 from nova.compute import vm_states
 from nova.compute import task_states
 from nova.compute import instance_types
+from nova.exception import InstancePasswordSetFailed
 from nova.flags import FLAGS
 
 from occi import exceptions
@@ -359,10 +360,12 @@ def set_password_for_vm(uid, password, context):
     password -- The new password.
     context -- The os context.
     """
-    # TODO: check exception handling!
     instance = get_vm(uid, context)
-
-    COMPUTE_API.set_admin_password(context, instance, password)
+    try:
+        COMPUTE_API.set_admin_password(context, instance, password)
+    except InstancePasswordSetFailed as error:
+        LOG.warn('Unable to set password - driver might not support it! ' +
+                 str(error))
 
 
 def get_vnc(uid, context):

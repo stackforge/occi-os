@@ -91,6 +91,10 @@ class OCCIRegistry(occi_registry.NonePersistentRegistry):
            core_model.Link.kind in resource.kind.related:
             # don't need to cache twice, only adding links :-)
             self.cache[(key, extras['nova_ctx'].user_id)] = resource
+        elif (key, extras['nova_ctx'].user_id) not in self.cache and \
+             resource.kind == os_addon.SEC_RULE:
+            # don't need to cache twice, only adding links :-)
+            self.cache[(key, extras['nova_ctx'].user_id)] = resource
 
     def delete_resource(self, key, extras):
         """

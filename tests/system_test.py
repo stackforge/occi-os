@@ -242,7 +242,7 @@ class SystemTest(unittest.TestCase):
         destroy_node(self.token, vm_location)
 
 
-    def tesat_security_grouping(self):
+    def test_security_grouping(self):
         """
         Test some security and accessibility stuff!
         """
@@ -292,20 +292,20 @@ class SystemTest(unittest.TestCase):
             else:
                 time.sleep(5)
 
-        # allocate floating IP
-        LOG.debug(trigger_action(self.token, vm_location +
-                                             '?action=alloc_float_ip',
-            'alloc_float_ip; scheme="http://schemas.openstack'
-            '.org/instance/action#"',
-            'org.openstack.network.floating.pool="nova"'))
-
-        #time.sleep(15)
-
-        # Deallocate Floating IP to VM
-        LOG.debug(trigger_action(self.token, vm_location +
-                                             '?action=dealloc_float_ip',
-            'dealloc_float_ip; scheme="http://schemas.openstack'
-            '.org/instance/action#"'))
+#        # allocate floating IP
+#        LOG.debug(trigger_action(self.token, vm_location +
+#                                             '?action=alloc_float_ip',
+#            'alloc_float_ip; scheme="http://schemas.openstack'
+#            '.org/instance/action#"',
+#            'org.openstack.network.floating.pool="nova"'))
+#
+#        #time.sleep(15)
+#
+#        # Deallocate Floating IP to VM
+#        LOG.debug(trigger_action(self.token, vm_location +
+#                                             '?action=dealloc_float_ip',
+#            'dealloc_float_ip; scheme="http://schemas.openstack'
+#            '.org/instance/action#"'))
 
         # change pw
         LOG.debug(trigger_action(self.token, vm_location + '?action=chg_pwd',
@@ -388,7 +388,7 @@ class SystemTest(unittest.TestCase):
         destroy_node(self.token, vm_location)
 
 
-    def test_scaling(self):
+    def tesat_scaling(self):
         """
         Test the scaling operations
         """

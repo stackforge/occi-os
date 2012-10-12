@@ -122,8 +122,8 @@ def remove_rule(rule, context):
     SEC_HANDLER.trigger_security_group_rule_destroy_refresh(context,
         [rule['id']])
     # TODO: method is one!
-    COMPUTE_API.trigger_security_group_rules_refresh(context,
-                                                     security_group['id'])
+    #COMPUTE_API.trigger_security_group_rules_refresh(context,
+    #                                                 security_group['id'])
 
 
 def get_rule(uid, context):
