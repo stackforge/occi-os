@@ -123,6 +123,10 @@ class OCCIApplication(occi_wsgi.Application, wsgi.Application):
             openstack.SecurityGroupBackend())
         self.register_backend(os_addon.SEC_RULE,
             openstack.SecurityRuleBackend())
+        self.register_backend(os_addon.OS_VM,
+            openstack.OsComputeBackend())
+        self.register_backend(os_addon.OS_CREATE_IMAGE,
+            openstack.OsComputeBackend())
 
     def __call__(self, environ, response):
         """

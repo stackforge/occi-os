@@ -327,7 +327,7 @@ class SystemTest(unittest.TestCase):
         do_request('DELETE', '/-/', heads)
 
 
-    def test_storage_stuff(self):
+    def tesat_storage_stuff(self):
         """
         Test attaching and detaching storage volumes + snapshotting etc.
         """
@@ -379,16 +379,16 @@ class SystemTest(unittest.TestCase):
                 time.sleep(5)
 
         # Create a Image from an Active VM
-        #LOG.debug(trigger_action(self.token, vm_location +
-        #                                     '?action=create_image',
-        #    'create_image; scheme="http://schemas.openstack'
-        #    '.org/instance/action#"',
-        #    'org.openstack.snapshot.image_name="awesome_ware"'))
+        LOG.debug(trigger_action(self.token, vm_location +
+                                             '?action=create_image',
+            'create_image; scheme="http://schemas.openstack'
+            '.org/instance/action#"',
+            'org.openstack.snapshot.image_name="awesome_ware"'))
 
         destroy_node(self.token, vm_location)
 
 
-    def tesat_scaling(self):
+    def test_scaling(self):
         """
         Test the scaling operations
         """
@@ -415,12 +415,6 @@ class SystemTest(unittest.TestCase):
         heads['Category'] = 'bitsy; scheme="http://schemas.openstack' \
                             '.org/template/resource#"'
         do_request('POST', vm_location, heads)
-
-        time.sleep(60)
-
-        # confirm scale up
-        trigger_action(self.token, vm_location + '?action=confirm_resize',
-'confirm_resize; scheme="http://schemas.openstack.org/instance/action#"')
 
         # wait
         cont = False

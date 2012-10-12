@@ -169,11 +169,21 @@ def resize_vm(uid, flavor_name, context):
         flavor = instance_types.get_instance_type_by_name(flavor_name)
         COMPUTE_API.resize(context, instance, flavor_id=flavor['flavorid'],
                            **kwargs)
+        ready = False
+        i = 0
+        while i < 15:
+            i += 1
+            state = get_vm(uid, context)['vm_state']
+            if state == 'resized':
+                ready = True
+            import time
+            time.sleep(1)
+        instance = get_vm(uid, context)
+        COMPUTE_API.confirm_resize(context, instance)
     except exception.FlavorNotFound:
         raise AttributeError('Unable to locate requested flavor.')
     except exception.InstanceInvalidState as error:
-        raise error
-        #raise AttributeError('VM is in an invalid state.')
+        raise AttributeError('VM is in an invalid state: ' + str(error))
 
 
 def delete_vm(uid, context):
@@ -370,42 +380,6 @@ def get_vnc(uid, context):
         return None
     return console
 
-
-def revert_resize_vm(uid, context):
-    """
-    Revert a resize.
-
-    uid -- id of the instance
-    context -- the os context
-    """
-    instance = get_vm(uid, context)
-    try:
-        COMPUTE_API.revert_resize(context, instance)
-    except exception.MigrationNotFound:
-        raise AttributeError('Instance has not been resized.')
-    except exception.InstanceInvalidState:
-        raise exceptions.HTTPError(406, 'VM is an invalid state.')
-    except Exception:
-        raise AttributeError('Error in revert-resize.')
-
-
-def confirm_resize_vm(uid, context):
-    """
-    Confirm a resize.
-
-    uid -- id of the instance
-    context -- the os context
-    """
-    instance = get_vm(uid, context)
-    try:
-        COMPUTE_API.confirm_resize(context, instance)
-    except exception.MigrationNotFound:
-        raise AttributeError('Instance has not been resized.')
-    except exception.InstanceInvalidState as error:
-        raise exceptions.HTTPError(406, 'VM is an invalid state: ' +
-                                        str(error))
-    except Exception:
-        raise AttributeError('Error in confirm-resize.')
 
 def get_vm(uid, context):
     """

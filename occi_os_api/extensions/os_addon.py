@@ -62,3 +62,8 @@ OS_CREATE_IMAGE = core_model.Action(
                 'http://schemas.openstack.org/instance/action#',
                  'create_image', 'Creates a new image for the given server.',
                  _OS_CREATE_IMAGE_ATTRIBUTES)
+
+# A Mixin for OpenStack VMs
+OS_VM = core_model.Mixin(
+    'http://schemas.openstack.org/instance/instance#',
+    'os_vms', actions=[OS_CHG_PWD, OS_CREATE_IMAGE])

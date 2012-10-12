@@ -35,6 +35,9 @@ from occi_os_api.nova_glue import vm, storage, net
 class OCCIRegistry(occi_registry.NonePersistentRegistry):
     """
     Registry for OpenStack.
+
+    Idea is the following: Create the OCCI entities (Resource and their
+    links) here and let the backends handle actions, attributes etc.
     """
 
     def __init__(self):
@@ -51,6 +54,8 @@ class OCCIRegistry(occi_registry.NonePersistentRegistry):
             sec_extras = {'user_id': extras['nova_ctx'].user_id,
                           'project_id': extras['nova_ctx'].project_id}
         return sec_extras
+
+    # The following two are here to deal with the security group mixins
 
     def delete_mixin(self, mixin, extras):
         """
@@ -76,6 +81,8 @@ class OCCIRegistry(occi_registry.NonePersistentRegistry):
 
         super(OCCIRegistry, self).set_backend(category, backend, extras)
 
+    # The following two deal with the creation and deletion os links.
+
     def add_resource(self, key, resource, extras):
         """
         Just here to prevent the super class from filling up an unused dict.
@@ -91,6 +98,10 @@ class OCCIRegistry(occi_registry.NonePersistentRegistry):
         """
         if (key, extras['nova_ctx'].user_id) in self.cache:
             self.cache.pop((key, extras['nova_ctx'].user_id))
+
+    # the following routines actually retrieve the info form OpenStack. Note
+    # that a cache is used. The cache is stable - so delete resources
+    # eventually also get deleted form the cache.
 
     def get_resource(self, key, extras):
         """
@@ -170,9 +181,6 @@ class OCCIRegistry(occi_registry.NonePersistentRegistry):
         """
         Retrieve a set of resources.
         """
-
-        print 'in cache: ', [item for item in self.cache.keys()]
-
         context = extras['nova_ctx']
         result = []
 
@@ -205,7 +213,6 @@ class OCCIRegistry(occi_registry.NonePersistentRegistry):
             elif item_id not in vm_res_ids and item.kind == infrastructure.COMPUTE:
                 # remove item and it's links from cache!
                 for link in item.links:
-                    print 'removing: ', link.identifier
                     self.cache.pop((link.identifier, item.extras['user_id']))
                 self.cache.pop((item.identifier, item.extras['user_id']))
             elif item_id not in stor_res_ids and item.kind == infrastructure.STORAGE:
@@ -256,7 +263,8 @@ class OCCIRegistry(occi_registry.NonePersistentRegistry):
 
         # 1. get identifier
         iden = infrastructure.COMPUTE.location + identifier
-        entity = core_model.Resource(iden, infrastructure.COMPUTE, [])
+        entity = core_model.Resource(iden, infrastructure.COMPUTE,
+            [os_addon.OS_VM])
         result.append(entity)
 
         # 2. os and res templates

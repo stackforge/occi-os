@@ -24,7 +24,7 @@ The compute resource backend for OpenStack.
 
 import logging
 
-from occi_os_api.extensions import os_mixins
+from occi_os_api.extensions import os_mixins, os_addon
 
 from occi_os_api.nova_glue import vm, storage
 
@@ -74,6 +74,8 @@ class ComputeBackend(KindBackend, ActionBackend):
                          infrastructure.SUSPEND,
                          infrastructure.RESTART]
 
+        entity.mixins.append(os_addon.OS_VM)
+
     def retrieve(self, entity, extras):
         """
         Retrieve a VM.
@@ -113,7 +115,6 @@ class ComputeBackend(KindBackend, ActionBackend):
             flavor_name = mixin.term
             vm.resize_vm(uid, flavor_name, context)
             old.attributes['occi.compute.state'] = 'inactive'
-            vm.confirm_resize_vm(uid, context)
             # now update the mixin info
             old.mixins.append(mixin)
         elif isinstance(mixin, os_mixins.OsTemplate):
