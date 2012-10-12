@@ -24,7 +24,7 @@ The compute resource backend for OpenStack.
 
 import logging
 
-from occi_os_api.extensions import templates
+from occi_os_api.extensions import os_mixins
 
 from occi_os_api.nova_glue import vm, storage
 
@@ -109,14 +109,14 @@ class ComputeBackend(KindBackend, ActionBackend):
 
         # for now we will only handle one mixin change per request
         mixin = new.mixins[0]
-        if isinstance(mixin, templates.ResourceTemplate):
+        if isinstance(mixin, os_mixins.ResourceTemplate):
             flavor_name = mixin.term
             vm.resize_vm(uid, flavor_name, context)
             old.attributes['occi.compute.state'] = 'inactive'
             vm.confirm_resize_vm(uid, context)
             # now update the mixin info
             old.mixins.append(mixin)
-        elif isinstance(mixin, templates.OsTemplate):
+        elif isinstance(mixin, os_mixins.OsTemplate):
             image_href = mixin.os_id
             vm.rebuild_vm(uid, image_href, context)
             old.attributes['occi.compute.state'] = 'inactive'

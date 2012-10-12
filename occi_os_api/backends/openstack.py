@@ -60,7 +60,6 @@ class OsComputeActionBackend(backend.ActionBackend):
             raise AttributeError('Not an applicable action.')
 
 
-# The same approach can be used to create and delete VM images.
 class SecurityGroupBackend(backend.UserDefinedMixinBackend):
     """
     Security Group backend.

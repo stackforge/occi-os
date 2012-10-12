@@ -33,7 +33,7 @@ from nova.flags import FLAGS
 from occi import exceptions
 from occi.extensions import infrastructure
 
-from occi_os_api.extensions import templates
+from occi_os_api.extensions import os_mixins
 from occi_os_api.extensions import os_addon
 
 import logging
@@ -77,9 +77,9 @@ def create_vm(entity, context):
     resource_template = None
     os_template = None
     for mixin in entity.mixins:
-        if isinstance(mixin, templates.ResourceTemplate):
+        if isinstance(mixin, os_mixins.ResourceTemplate):
             resource_template = mixin
-        elif isinstance(mixin, templates.OsTemplate):
+        elif isinstance(mixin, os_mixins.OsTemplate):
             os_template = mixin
         # Look for security group. If the group is non-existant, the
         # call to create will fail.

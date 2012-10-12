@@ -53,6 +53,7 @@ class StorageBackend(backend.KindBackend, backend.ActionBackend):
             raise exceptions.HTTPError(500, 'There was an error creating the '
                                        'volume')
         entity.attributes['occi.core.id'] = str(vol_id)
+        entity.identifier = infrastructure.STORAGE.location + vol_id
 
         if new_volume['status'] == 'available':
             entity.attributes['occi.storage.state'] = 'online'

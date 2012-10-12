@@ -43,3 +43,11 @@ class ResourceTemplate(core_model.Mixin):
     """
 
     pass
+
+
+class UserSecurityGroupMixin(core_model.Mixin):
+    """
+    Empty Mixin.
+    """
+    pass
+

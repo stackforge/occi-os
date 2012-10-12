@@ -35,16 +35,17 @@ from nova.network import api
 from nova.openstack.common import cfg
 
 from occi_os_api import registry
-from occi_os_api.backends import compute
+from occi_os_api.backends import compute, openstack
 from occi_os_api.backends import network
 from occi_os_api.backends import storage
-from occi_os_api.extensions import templates
+from occi_os_api.extensions import os_mixins
 from occi_os_api.extensions import os_addon
 
 from occi import backend
 from occi import core_model
 from occi import wsgi as occi_wsgi
 from occi.extensions import infrastructure
+from occi_os_api.extensions.os_mixins import UserSecurityGroupMixin
 
 LOG = logging.getLogger(__name__)
 
@@ -75,9 +76,9 @@ class OCCIApplication(occi_wsgi.Application, wsgi.Application):
         Initialize the WSGI OCCI application.
         """
         super(OCCIApplication, self).__init__(registry=registry.OCCIRegistry())
-        self._register_occi_infra()
+        self._register_backends()
 
-    def _register_occi_infra(self):
+    def _register_backends(self):
         """
         Registers the OCCI infrastructure resources to ensure compliance
         with GFD184
@@ -116,6 +117,12 @@ class OCCIApplication(occi_wsgi.Application, wsgi.Application):
         self.register_backend(infrastructure.SNAPSHOT, storage_backend)
         self.register_backend(infrastructure.RESIZE, storage_backend)
         self.register_backend(infrastructure.STORAGELINK, storage_link_backend)
+
+        # add extensions for occi.
+        self.register_backend(os_addon.SEC_GROUP,
+            openstack.SecurityGroupBackend())
+        self.register_backend(os_addon.SEC_RULE,
+            openstack.SecurityRuleBackend())
 
     def __call__(self, environ, response):
         """
@@ -160,7 +167,7 @@ class OCCIApplication(occi_wsgi.Application, wsgi.Application):
                 LOG.debug(msg)
                 continue
 
-            os_template = templates.OsTemplate(
+            os_template = os_mixins.OsTemplate(
                                 term=img['name'],
                                 scheme=template_schema,
                                 os_id=img['id'],
@@ -185,7 +192,7 @@ class OCCIApplication(occi_wsgi.Application, wsgi.Application):
         os_flavours = instance_types.get_all_types()
 
         for itype in os_flavours:
-            resource_template = templates.ResourceTemplate(
+            resource_template = os_mixins.ResourceTemplate(
                 term=itype,
                 scheme=template_schema,
                 related=[infrastructure.RESOURCE_TEMPLATE],
@@ -220,7 +227,7 @@ class OCCIApplication(occi_wsgi.Application, wsgi.Application):
 
         for group in groups:
             if group['name'] not in excld_grps:
-                sec_mix = os_addon.UserSecurityGroupMixin(
+                sec_mix = UserSecurityGroupMixin(
                 term=group['name'],
                 scheme=sec_grp,
                 related=[os_addon.SEC_GROUP],

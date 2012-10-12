@@ -45,7 +45,12 @@ def get_adapter_info(uid, context):
     vm_instance = vm.get_vm(uid, context)
 
     result = {'public':[], 'admin':[]}
-    net_info = NETWORK_API.get_instance_nw_info(context, vm_instance)[0]
+    try:
+        net_info = NETWORK_API.get_instance_nw_info(context, vm_instance)[0]
+    except IndexError:
+        LOG.warn('Unable to retrieve network information - this is because '
+                 'of OpenStack!!')
+        return result
     gw = net_info['network']['subnets'][0]['gateway']['address']
     mac = net_info['address']
 

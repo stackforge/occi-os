@@ -47,13 +47,6 @@ SEC_GROUP = core_model.Mixin(
     'group', attributes=None)
 
 
-# An extended Mixin, an extension
-class UserSecurityGroupMixin(core_model.Mixin):
-    """
-    Empty Mixin.
-    """
-    pass
-
 # OS change adminstrative password action
 _OS_CHG_PWD_ATTRIBUTES = {'org.openstack.credentials.admin_pwd': '', }
 OS_CHG_PWD = core_model.Action(
