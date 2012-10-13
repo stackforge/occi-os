@@ -181,7 +181,7 @@ class SystemTest(unittest.TestCase):
         LOG.info('security token is: ' + self.token)
 
 
-    def tesat_compute_node(self):
+    def test_compute_node(self):
         """
         Test ops on a compute node!
         """
@@ -292,20 +292,20 @@ class SystemTest(unittest.TestCase):
             else:
                 time.sleep(5)
 
-#        # allocate floating IP
-#        LOG.debug(trigger_action(self.token, vm_location +
-#                                             '?action=alloc_float_ip',
-#            'alloc_float_ip; scheme="http://schemas.openstack'
-#            '.org/instance/action#"',
-#            'org.openstack.network.floating.pool="nova"'))
-#
-#        #time.sleep(15)
-#
-#        # Deallocate Floating IP to VM
-#        LOG.debug(trigger_action(self.token, vm_location +
-#                                             '?action=dealloc_float_ip',
-#            'dealloc_float_ip; scheme="http://schemas.openstack'
-#            '.org/instance/action#"'))
+        # allocate floating IP
+        cats = ['networkinterface; scheme="http://schemas.ogf'
+                '.org/occi/infrastructure#"', 'ipnetworkinterface; '
+                                              'scheme="http://schemas.ogf'
+                '.org/occi/infrastructure/networkinterface#"']
+        attrs = ['occi.core.source=http://"' + OCCI_HOST + vm_location +  '"',
+                 'occi.core.target=http://"' + OCCI_HOST +
+                 '/network/public"',]
+        float_ip_location = create_node(self.token, cats, attrs)
+
+        time.sleep(15)
+
+        # Deallocate Floating IP to VM
+        destroy_node(self.token, float_ip_location)
 
         # change pw
         LOG.debug(trigger_action(self.token, vm_location + '?action=chg_pwd',
@@ -327,7 +327,7 @@ class SystemTest(unittest.TestCase):
         do_request('DELETE', '/-/', heads)
 
 
-    def tesat_storage_stuff(self):
+    def test_storage_stuff(self):
         """
         Test attaching and detaching storage volumes + snapshotting etc.
         """
@@ -388,7 +388,7 @@ class SystemTest(unittest.TestCase):
         destroy_node(self.token, vm_location)
 
 
-    def tesat_scaling(self):
+    def test_scaling(self):
         """
         Test the scaling operations
         """

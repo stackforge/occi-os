@@ -33,6 +33,7 @@ Network resource backend.
 # Also see nova/occi_os_api/openstack/compute/contrib/networks.py
 
 from occi import backend
+from occi_os_api.nova_glue import net
 
 
 class NetworkBackend(backend.KindBackend, backend.ActionBackend):
@@ -67,14 +68,11 @@ class IpNetworkBackend(backend.MixinBackend):
 
 class IpNetworkInterfaceBackend(backend.MixinBackend):
     """
-    A mixin backend for the IpNetworkingInterface.
+    A mixin backend for the IpNetworkingInterface (covered by
+    NetworkInterfaceBackend).
     """
 
-    def create(self, link, extras):
-        """
-        Can't create in nova so we don't either.
-        """
-        raise AttributeError('Currently not supported.')
+    pass
 
 
 class NetworkInterfaceBackend(backend.KindBackend):
@@ -86,11 +84,28 @@ class NetworkInterfaceBackend(backend.KindBackend):
         """
         As nova does not support creation of L2 networks we don't.
         """
-        # TODO: add floating ip support
-        raise AttributeError('Currenlty not supported.')
+        # TODO: add all network info!
+        if link.target.identifier == '/network/public':
+            # public means floating IP in OS!
+            address = net.add_floating_ip_to_vm(link.source.attributes['occi.core.id'],
+                extras['nova_ctx'])
+            link.attributes['occi.networkinterface.address'] = address
+        else:
+            raise AttributeError('Currently not supported.')
 
     def update(self, old, new, extras):
         """
         Allows for the update of network links.
         """
         raise AttributeError('Currently not supported.')
+
+    def delete(self, link, extras):
+        """
+        Remove a floating ip!
+        """
+        if link.target.identifier == '/network/public':
+            # public means floating IP in OS!
+            net.remove_floating_ip(link.source.attributes['occi.core.id'],
+                link.attributes['occi.networkinterface.address'],
+                extras['nova_ctx'])
+

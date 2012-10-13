@@ -185,6 +185,9 @@ class OCCIRegistry(occi_registry.NonePersistentRegistry):
         """
         Retrieve a set of resources.
         """
+
+        # TODO: add security rules!
+
         context = extras['nova_ctx']
         result = []
 

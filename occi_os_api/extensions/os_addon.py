@@ -51,8 +51,7 @@ SEC_GROUP = core_model.Mixin(
 _OS_CHG_PWD_ATTRIBUTES = {'org.openstack.credentials.admin_pwd': '', }
 OS_CHG_PWD = core_model.Action(
                 'http://schemas.openstack.org/instance/action#',
-                 'chg_pwd', 'Removes all data on the server and replaces'
-                                    'it with the specified image (via Mixin).',
+                 'chg_pwd', 'Changes Admin password.',
                  _OS_CHG_PWD_ATTRIBUTES)
 
 

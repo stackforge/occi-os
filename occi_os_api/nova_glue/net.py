@@ -72,7 +72,7 @@ def get_adapter_info(uid, context):
     return result
 
 
-def add_flaoting_ip_to_vm(uid, attributes, context):
+def add_floating_ip_to_vm(uid, context):
     """
     Adds an ip to an VM instance.
 
@@ -90,15 +90,7 @@ def add_flaoting_ip_to_vm(uid, attributes, context):
     if not fixed_ips:
         raise AttributeError('No fixed ips associated to instance')
 
-    if 'org.openstack.network.floating.pool' not in attributes:
-        pool = None
-    else:
-        pool = attributes['org.openstack.network.floating.pool']
-
-    float_address = NETWORK_API.allocate_floating_ip(context, pool)
-
-    #if len(fixed_ips) > 1:
-    #    LOG.warn('multiple fixed_ips exist, using the first')
+    float_address = NETWORK_API.allocate_floating_ip(context, None)
 
     try:
         address = fixed_ips[0]['address']
