@@ -26,9 +26,9 @@ from setuptools import setup
 
 
 setup(
-    name='openstackocci',
-    version='folsom-1.0',
-    description='OCCI interface for Openstack.',
+    name='occi-os-folsom',
+    version='1.0',
+    description='OCCI interface for Openstack (stable/folsom).',
     long_description='''
          This is a clone of https://github.com/dizz/nova - it provides a
          python egg which can be deployed in OpenStack and will thereby add the

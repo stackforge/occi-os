@@ -34,8 +34,8 @@ from nova.flags import FLAGS
 from occi import exceptions
 from occi.extensions import infrastructure
 
-from occi_os_api.extensions import os_mixins
-from occi_os_api.extensions import os_addon
+from occiosapi.extensions import os_mixins
+from occiosapi.extensions import os_addon
 
 import logging
 

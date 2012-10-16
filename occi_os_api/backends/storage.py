@@ -26,7 +26,7 @@ import uuid
 from occi import backend
 from occi import exceptions
 from occi.extensions import infrastructure
-from occi_os_api.nova_glue import storage, vm
+from occiosapi.nova_glue import storage, vm
 
 
 class StorageBackend(backend.KindBackend, backend.ActionBackend):

@@ -24,9 +24,9 @@ The compute resource backend for OpenStack.
 
 import logging
 
-from occi_os_api.extensions import os_mixins, os_addon
+from occiosapi.extensions import os_mixins, os_addon
 
-from occi_os_api.nova_glue import vm, storage
+from occiosapi.nova_glue import vm, storage
 
 from occi.backend import KindBackend, ActionBackend
 from occi.extensions import infrastructure

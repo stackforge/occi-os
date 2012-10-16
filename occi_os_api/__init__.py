@@ -28,7 +28,7 @@ sample_app entry point is defined in setup.py:
 
     entry_points='''
          [paste.app_factory]
-         sample_app = occi_os_api:main
+         sample_app = occiosapi:main
     ''',
 
 which point to this function call (<module name>:function).
@@ -37,7 +37,7 @@ which point to this function call (<module name>:function).
 # W0613:unused args
 # pylint: disable=W0613
 
-from occi_os_api import wsgi
+from occiosapi import wsgi
 
 
 #noinspection PyUnusedLocal

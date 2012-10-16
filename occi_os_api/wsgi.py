@@ -34,18 +34,18 @@ from nova.compute import instance_types
 from nova.network import api
 from nova.openstack.common import cfg
 
-from occi_os_api import registry
-from occi_os_api.backends import compute, openstack
-from occi_os_api.backends import network
-from occi_os_api.backends import storage
-from occi_os_api.extensions import os_mixins
-from occi_os_api.extensions import os_addon
+from occiosapi import registry
+from occiosapi.backends import compute, openstack
+from occiosapi.backends import network
+from occiosapi.backends import storage
+from occiosapi.extensions import os_mixins
+from occiosapi.extensions import os_addon
 
 from occi import backend
 from occi import core_model
 from occi import wsgi as occi_wsgi
 from occi.extensions import infrastructure
-from occi_os_api.extensions.os_mixins import UserSecurityGroupMixin
+from occiosapi.extensions.os_mixins import UserSecurityGroupMixin
 
 LOG = logging.getLogger(__name__)
 

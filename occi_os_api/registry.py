@@ -27,10 +27,10 @@ import uuid
 from occi import registry as occi_registry
 from occi import core_model
 from occi.extensions import infrastructure
-from occi_os_api.backends import openstack
-from occi_os_api.extensions import os_addon
+from occiosapi.backends import openstack
+from occiosapi.extensions import os_addon
 
-from occi_os_api.nova_glue import vm, storage, net
+from occiosapi.nova_glue import vm, storage, net
 
 class OCCIRegistry(occi_registry.NonePersistentRegistry):
     """

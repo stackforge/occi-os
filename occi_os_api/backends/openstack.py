@@ -25,10 +25,10 @@ import random
 from occi import backend
 from occi import exceptions
 
-from occi_os_api.extensions import os_addon
+from occiosapi.extensions import os_addon
 
-from occi_os_api.nova_glue import vm
-from occi_os_api.nova_glue import security
+from occiosapi.nova_glue import vm
+from occiosapi.nova_glue import security
 
 class OsComputeBackend(backend.MixinBackend, backend.ActionBackend):
     """
@@ -178,8 +178,6 @@ def make_sec_rule(entity, sec_grp_id):
     cidr = entity.attributes['occi.network.security.range'].strip()
     if len(cidr) <= 0:
         cidr = '0.0.0.0/0'
-        # TODO(dizz): find corresponding call in master!
-    #if utils.is_valid_cidr(cidr):
     if True:
         sg_rule['cidr'] = cidr
     else:

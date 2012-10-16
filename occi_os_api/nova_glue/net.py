@@ -25,14 +25,14 @@ from nova import network
 from nova import exception
 from nova import compute
 from nova.compute import utils
-from occi_os_api.nova_glue import vm
+from occiosapi.nova_glue import vm
 
 # Connect to nova :-)
 
 NETWORK_API = network.API()
 COMPUTE_API = compute.API()
 
-LOG = logging.getLogger('nova.occi_os_api.wsgi.occi.nova_glue.net')
+LOG = logging.getLogger('nova.occiosapi.wsgi.occi.nova_glue.net')
 
 
 def get_adapter_info(uid, context):

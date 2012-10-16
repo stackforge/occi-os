@@ -24,16 +24,9 @@ Network resource backend.
 #W0232:no init
 #pylint: disable=W0613,R0201,R0903,W0232
 
-# TODO(dizz): implement create
-#             implement delete
-#             implement retreive
-#             implement actions
-#             implement updates
-
-# Also see nova/occi_os_api/openstack/compute/contrib/networks.py
 
 from occi import backend
-from occi_os_api.nova_glue import net
+from occiosapi.nova_glue import net
 
 
 class NetworkBackend(backend.KindBackend, backend.ActionBackend):
