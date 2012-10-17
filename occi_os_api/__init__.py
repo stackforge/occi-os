@@ -37,7 +37,7 @@ which point to this function call (<module name>:function).
 # W0613:unused args
 # pylint: disable=W0613
 
-from occiosapi import wsgi
+from occi_os_api import wsgi
 
 
 #noinspection PyUnusedLocal

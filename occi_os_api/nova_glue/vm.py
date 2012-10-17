@@ -1,3 +1,4 @@
+# coding=utf-8
 # vim: tabstop=4 shiftwidth=4 softtabstop=4
 
 #
@@ -34,8 +35,8 @@ from nova.flags import FLAGS
 from occi import exceptions
 from occi.extensions import infrastructure
 
-from occiosapi.extensions import os_mixins
-from occiosapi.extensions import os_addon
+from occi_os_api.extensions import os_mixins
+from occi_os_api.extensions import os_addon
 
 import logging
 

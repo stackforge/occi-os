@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# coding=utf-8
 # vim: tabstop=4 shiftwidth=4 softtabstop=4
 
 #    Licensed under the Apache License, Version 2.0 (the "License");

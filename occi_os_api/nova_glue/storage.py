@@ -1,3 +1,4 @@
+# coding=utf-8
 # vim: tabstop=4 shiftwidth=4 softtabstop=4
 
 #
@@ -28,7 +29,7 @@ from nova.image import glance
 from occi import exceptions
 
 # Connection to the nova APIs
-from occiosapi.nova_glue import vm
+from occi_os_api.nova_glue import vm
 
 VOLUME_API = volume.API()
 

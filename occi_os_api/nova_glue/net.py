@@ -1,3 +1,4 @@
+# coding=utf-8
 # vim: tabstop=4 shiftwidth=4 softtabstop=4
 
 #
@@ -25,7 +26,8 @@ from nova import network
 from nova import exception
 from nova import compute
 from nova.compute import utils
-from occiosapi.nova_glue import vm
+
+from occi_os_api.nova_glue import vm
 
 # Connect to nova :-)
 

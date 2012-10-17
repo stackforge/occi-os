@@ -26,7 +26,7 @@ Network resource backend.
 
 
 from occi import backend
-from occiosapi.nova_glue import net
+from occi_os_api.nova_glue import net
 
 
 class NetworkBackend(backend.KindBackend, backend.ActionBackend):
