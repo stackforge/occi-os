@@ -29,8 +29,8 @@ import unittest
 import random
 
 
-HEADS = {'Content-Type':'text/occi',
-         'Accept':'text/occi'
+HEADS = {'Content-Type': 'text/occi',
+         'Accept': 'text/occi'
 }
 
 KEYSTONE_HOST = '127.0.0.1:5000'
@@ -74,9 +74,9 @@ def get_os_token(username, password):
     """
     Get a security token from Keystone.
     """
-    body = '{"auth": {"tenantName": "'+username+'", ' \
-           '"passwordCredentials":{"username": "'+username+'", ' \
-           '"password": "'+password+'"}}}'
+    body = '{"auth": {"tenantName": "' + username + '", ' \
+           '"passwordCredentials":{"username": "' + username + '", ' \
+           '"password": "' + password + '"}}}'
 
     heads = {'Content-Type': 'application/json'}
     conn = httplib.HTTPConnection(KEYSTONE_HOST)
@@ -154,7 +154,7 @@ def destroy_node(token, location):
     return heads
 
 
-def trigger_action(token, url, action_cat, action_param =None):
+def trigger_action(token, url, action_cat, action_param=None):
     """
     Trigger an OCCI action.
     """
@@ -172,7 +172,6 @@ class SystemTest(unittest.TestCase):
     Do a simple set of test.
     """
 
-
     def setUp(self):
         """
         Setup the test.
@@ -180,7 +179,6 @@ class SystemTest(unittest.TestCase):
         # Get a security token:
         self.token = get_os_token('admin', 'os4all')
         LOG.info('security token is: ' + self.token)
-
 
     def test_compute_node(self):
         """
@@ -242,7 +240,6 @@ class SystemTest(unittest.TestCase):
         # delete
         destroy_node(self.token, vm_location)
 
-
     def test_security_grouping(self):
         """
         Test some security and accessibility stuff!
@@ -298,9 +295,9 @@ class SystemTest(unittest.TestCase):
                 '.org/occi/infrastructure#"', 'ipnetworkinterface; '
                                               'scheme="http://schemas.ogf'
                 '.org/occi/infrastructure/networkinterface#"']
-        attrs = ['occi.core.source=http://"' + OCCI_HOST + vm_location +  '"',
+        attrs = ['occi.core.source=http://"' + OCCI_HOST + vm_location + '"',
                  'occi.core.target=http://"' + OCCI_HOST +
-                 '/network/public"',]
+                 '/network/public"']
         float_ip_location = create_node(self.token, cats, attrs)
 
         time.sleep(15)
@@ -327,21 +324,21 @@ class SystemTest(unittest.TestCase):
         heads['Category'] = name + '; scheme="http://www.mystuff.org/sec#"'
         do_request('DELETE', '/-/', heads)
 
-
     def test_storage_stuff(self):
         """
         Test attaching and detaching storage volumes + snapshotting etc.
         """
         # create new VM
         cats = ['m1.tiny; scheme="http://schemas.openstack'
-                '.org/template/resource#"',
-                'cirros-0.3.0-x86_64-uec; scheme="http://schemas.openstack'
-                '.org/template/os#"',
-                'compute; scheme="http://schemas.ogf.org/occi/infrastructure#"']
+            '.org/template/resource#"',
+            'cirros-0.3.0-x86_64-uec; scheme="http://schemas.openstack'
+            '.org/template/os#"',
+            'compute; scheme="http://schemas.ogf.org/occi/infrastructure#"']
         vm_location = create_node(self.token, cats)
 
         # create volume
-        cats = ['storage; scheme="http://schemas.ogf.org/occi/infrastructure#"']
+        cats = ['storage; scheme="http://schemas.ogf'
+                '.org/occi/infrastructure#"']
         attrs = ['occi.storage.size = 1.0']
         vol_location = create_node(self.token, cats, attrs)
 
@@ -353,7 +350,7 @@ class SystemTest(unittest.TestCase):
         # link volume and compute
         cats = ['storagelink; scheme="http://schemas.ogf'
                 '.org/occi/infrastructure#"']
-        attrs = ['occi.core.source=http://"' + OCCI_HOST + vm_location +  '"',
+        attrs = ['occi.core.source=http://"' + OCCI_HOST + vm_location + '"',
                  'occi.core.target=http://"' + OCCI_HOST + vol_location + '"',
                  'occi.storagelink.deviceid="/dev/vdc"']
         link_location = create_node(self.token, cats, attrs)
@@ -388,17 +385,16 @@ class SystemTest(unittest.TestCase):
 
         destroy_node(self.token, vm_location)
 
-
     def test_scaling(self):
         """
         Test the scaling operations
         """
         # create new VM
         cats = ['itsy; scheme="http://schemas.openstack'
-                '.org/template/resource#"',
-                'cirros-0.3.0-x86_64-uec; scheme="http://schemas.openstack'
-                '.org/template/os#"',
-                'compute; scheme="http://schemas.ogf.org/occi/infrastructure#"']
+            '.org/template/resource#"',
+            'cirros-0.3.0-x86_64-uec; scheme="http://schemas.openstack'
+            '.org/template/os#"',
+            'compute; scheme="http://schemas.ogf.org/occi/infrastructure#"']
         vm_location = create_node(self.token, cats)
 
         # wait
@@ -427,4 +423,3 @@ class SystemTest(unittest.TestCase):
                 time.sleep(5)
 
         destroy_node(self.token, vm_location)
-

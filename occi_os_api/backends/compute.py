@@ -75,6 +75,7 @@ class ComputeBackend(KindBackend, ActionBackend):
                          infrastructure.SUSPEND,
                          infrastructure.RESTART]
 
+        # Tell the world that is is an VM in OpenStack...
         entity.mixins.append(os_addon.OS_VM)
 
     def retrieve(self, entity, extras):
@@ -111,6 +112,10 @@ class ComputeBackend(KindBackend, ActionBackend):
         LOG.debug('Updating an Virtual machine: ' + repr(uid))
 
         # for now we will only handle one mixin change per request
+        if len(new.mixins) != 1:
+            raise AttributeError('Only updates with one mixin in request are'
+                                 ' currently supported')
+
         mixin = new.mixins[0]
         if isinstance(mixin, os_mixins.ResourceTemplate):
             flavor_name = mixin.term

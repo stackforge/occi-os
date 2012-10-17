@@ -26,11 +26,12 @@ fi
 
 echo '\n Code style        \n****************************************\n'
 
-pep8 --repeat --statistics --count occi_os_api
+pep8 --repeat --statistics --count occi_os_api tests
 
 echo '\n Issues report     \n****************************************\n'
 
 pyflakes occi_os_api
+vulture occi_os_api
 
 echo '\n Pychecker report  \n****************************************\n'
 
