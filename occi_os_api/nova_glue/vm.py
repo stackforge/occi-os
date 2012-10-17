@@ -173,7 +173,7 @@ def resize_vm(uid, flavor_name, context):
                            **kwargs)
         ready = False
         i = 0
-        while i < 15:
+        while not ready or i < 15:
             i += 1
             state = get_vm(uid, context)['vm_state']
             if state == 'resized':
@@ -398,6 +398,7 @@ def get_vm(uid, context):
         raise exceptions.HTTPError(404, 'VM not found!')
     return instance
 
+
 def get_vms(context):
     """
     Retrieve all VMs in a given context.
@@ -405,6 +406,7 @@ def get_vms(context):
     opts = {'deleted': False}
     tmp = COMPUTE_API.get_all(context, search_opts=opts)
     return tmp
+
 
 def get_occi_state(uid, context):
     """

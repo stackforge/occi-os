@@ -242,4 +242,3 @@ class StorageLinkBackend(backend.KindBackend):
         """
         volume_id = get_vol_to_attach(link)
         vm.detach_volume(volume_id, extras['nova_ctx'])
-

@@ -80,7 +80,8 @@ class NetworkInterfaceBackend(backend.KindBackend):
         # TODO: add all network info!
         if link.target.identifier == '/network/public':
             # public means floating IP in OS!
-            address = net.add_floating_ip_to_vm(link.source.attributes['occi.core.id'],
+            address = net.add_floating_ip_to_vm(link.source.attributes[
+                                                'occi.core.id'],
                 extras['nova_ctx'])
             link.attributes['occi.networkinterface.address'] = address
         else:
@@ -101,4 +102,3 @@ class NetworkInterfaceBackend(backend.KindBackend):
             net.remove_floating_ip(link.source.attributes['occi.core.id'],
                 link.attributes['occi.networkinterface.address'],
                 extras['nova_ctx'])
-

@@ -29,6 +29,7 @@ from occi_os_api.extensions import os_addon
 from occi_os_api.nova_glue import vm
 from occi_os_api.nova_glue import security
 
+
 class OsComputeBackend(backend.MixinBackend, backend.ActionBackend):
     """
     The OpenStackCompute backend.
@@ -39,10 +40,7 @@ class OsComputeBackend(backend.MixinBackend, backend.ActionBackend):
         Add OpenStack related actions.
         """
         if 'occi.compute.state' in entity.attributes and  entity.attributes[
-                                                      'occi.compute' \
-                                                        '.state'] ==' \
-                                                                       ' ' \
-                                                                ''active':
+                  'occi.compute.state'] == 'active':
             entity.actions.append(os_addon.OS_CREATE_IMAGE)
             entity.actions.append(os_addon.OS_CHG_PWD)
 

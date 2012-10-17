@@ -97,11 +97,13 @@ def snapshot_storage_instance(uid, name, description, context):
     instance = get_storage(uid, context)
     VOLUME_API.create_snapshot(context, instance, name, description)
 
+
 def get_image(uid, context):
     """
     Return details on an image.
     """
     return IMAGE_API.show(context, uid)
+
 
 def get_image_architecture(uid, context):
     """
@@ -144,6 +146,7 @@ def get_storage(uid, context):
     except exception.NotFound:
         raise exceptions.HTTPError(404, 'Volume not found!')
     return instance
+
 
 def get_storages(context):
     """

@@ -46,7 +46,7 @@ def get_adapter_info(uid, context):
     """
     vm_instance = vm.get_vm(uid, context)
 
-    result = {'public':[], 'admin':[]}
+    result = {'public': [], 'admin': []}
     try:
         net_info = NETWORK_API.get_instance_nw_info(context, vm_instance)[0]
     except IndexError:
@@ -58,13 +58,13 @@ def get_adapter_info(uid, context):
 
     tmp = net_info['network']['subnets'][0]['ips'][0]
     for item in tmp['floating_ips']:
-        result['public'].append({'interface':'eth0',
-                                 'mac':'aa:bb:cc:dd:ee:ff',
+        result['public'].append({'interface': 'eth0',
+                                 'mac': 'aa:bb:cc:dd:ee:ff',
                                  'state': 'active',
                                  'address': item['address'],
                                  'gateway': '0.0.0.0',
                                  'allocation': 'static'})
-    result['admin'].append({'interface':'eth0',
+    result['admin'].append({'interface': 'eth0',
                             'mac': mac,
                             'state': 'active',
                             'address': tmp['address'],

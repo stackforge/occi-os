@@ -27,11 +27,9 @@ import logging
 
 from nova import flags
 from nova import wsgi
-from nova import context
 from nova import db
 from nova.image import glance
 from nova.compute import instance_types
-from nova.network import api
 from nova.openstack.common import cfg
 
 from occi_os_api import registry
@@ -208,7 +206,7 @@ class OCCIApplication(occi_wsgi.Application, wsgi.Application):
             try:
                 self.registry.get_backend(resource_template, extras)
             except AttributeError:
-                msg = 'Registering an OpenStack flavour/instance type: %s' %\
+                msg = 'Registering an OpenStack flavour/instance type: %s' % \
                       str(resource_template)
                 LOG.debug(msg)
                 self.register_backend(resource_template, MIXIN_BACKEND)
