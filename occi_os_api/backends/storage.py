@@ -126,9 +126,12 @@ class StorageBackend(backend.KindBackend, backend.ActionBackend):
             LOG.warn('The operations online, offline, backup and resize are '
                      'currently not supported!')
         elif action == infrastructure.SNAPSHOT:
-            volume_id = int(entity.attributes['occi.core.id'])
-            name = str(volume_id) + date.today().isoformat()
-            description = entity.attributes['occi.core.summary']
+            volume_id = entity.attributes['occi.core.id']
+            name = volume_id + date.today().isoformat()
+            if 'occi.core.summary' in entity.attributes:
+                description = entity.attributes['occi.core.summary']
+            else:
+                description = 'N/A'
             storage.snapshot_storage_instance(volume_id, name, description,
                                               extras['nova_ctx'])
 

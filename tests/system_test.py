@@ -328,6 +328,8 @@ class SystemTest(unittest.TestCase):
         """
         Test attaching and detaching storage volumes + snapshotting etc.
         """
+        # TODO: test snapshot!
+
         # create new VM
         cats = ['m1.tiny; scheme="http://schemas.openstack'
             '.org/template/resource#"',
@@ -342,10 +344,17 @@ class SystemTest(unittest.TestCase):
         attrs = ['occi.storage.size = 1.0']
         vol_location = create_node(self.token, cats, attrs)
 
+        time.sleep(25)
+
         # get individual node.
         LOG.debug(get_node(self.token, vol_location)['x-occi-attribute'])
 
-        time.sleep(15)
+        # snapshot volume
+        #trigger_action(self.token, vol_location +
+        #                           '?action=snapshot',
+        #    'snapshot; scheme="http://schemas.ogf'
+        #    '.org/occi/infrastructure/storage/action#"')
+        # not doing above - since than I cannot delete the volume later...
 
         # link volume and compute
         cats = ['storagelink; scheme="http://schemas.ogf'
