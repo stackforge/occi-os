@@ -322,7 +322,6 @@ class OCCIRegistry(occi_registry.NonePersistentRegistry):
         """
         Update a storage resource instance.
         """
-        # TODO: is there sth to do here??
         return entity
 
     def _construct_occi_storage(self, identifier, extras):

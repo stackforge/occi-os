@@ -25,6 +25,7 @@ Test network resource backend.
 import mox
 import unittest
 from occi import core_model
+from occi.extensions import infrastructure
 
 from occi_os_api import nova_glue
 from occi_os_api.backends import network
@@ -56,7 +57,7 @@ class TestNetworkInterfaceBackend(unittest.TestCase):
         Test create for failure!
         """
         source = mox.MockObject(core_model.Resource)
-        source.attributes={'occi.core.id': 'bar'}
+        source.attributes = {'occi.core.id': 'bar'}
         target = mox.MockObject(core_model.Resource)
         target.identifier = '/network/admin'
 
@@ -83,7 +84,7 @@ class TestNetworkInterfaceBackend(unittest.TestCase):
         Test create for sanity!
         """
         source = mox.MockObject(core_model.Resource)
-        source.attributes={'occi.core.id': 'bar'}
+        source.attributes = {'occi.core.id': 'bar'}
         target = mox.MockObject(core_model.Resource)
         target.identifier = '/network/public'
 
@@ -105,6 +106,9 @@ class TestNetworkInterfaceBackend(unittest.TestCase):
         self.assertIn('occi.networkinterface.gateway', link.attributes)
         self.assertIn('occi.networkinterface.allocation', link.attributes)
 
+        # self.assertIn(infrastructure.IPNETWORKINTERFACE, link.mixins)
+        # self.assertIn(infrastructure.NETWORKINTERFACE, link.mixins)
+
         self.mox.VerifyAll()
 
     def test_delete_for_sanity(self):
@@ -112,7 +116,7 @@ class TestNetworkInterfaceBackend(unittest.TestCase):
         Test create for sanity!
         """
         source = mox.MockObject(core_model.Resource)
-        source.attributes={'occi.core.id': 'bar'}
+        source.attributes = {'occi.core.id': 'bar'}
         target = mox.MockObject(core_model.Resource)
         target.identifier = '/network/public'
 
