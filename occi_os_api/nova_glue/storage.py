@@ -55,7 +55,6 @@ def create_storage(size, context, name=None, description=None):
     if not float(size).is_integer:
         raise AttributeError('Volume sizes cannot be specified as fractional'
                              ' floats.')
-    #size = str(int(float(size)))
     size = int(float(size))
 
     disp_name = ''
