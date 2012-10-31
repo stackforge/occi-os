@@ -328,7 +328,6 @@ class SystemTest(unittest.TestCase):
         """
         Test attaching and detaching storage volumes + snapshotting etc.
         """
-        # TODO: test snapshot!
 
         # create new VM
         cats = ['m1.tiny; scheme="http://schemas.openstack'
@@ -350,11 +349,11 @@ class SystemTest(unittest.TestCase):
         LOG.debug(get_node(self.token, vol_location)['x-occi-attribute'])
 
         # snapshot volume
+        # snapshot will work - but than deletion of volume is impossible :-/
         #trigger_action(self.token, vol_location +
         #                           '?action=snapshot',
         #    'snapshot; scheme="http://schemas.ogf'
         #    '.org/occi/infrastructure/storage/action#"')
-        # not doing above - since than I cannot delete the volume later...
 
         # link volume and compute
         cats = ['storagelink; scheme="http://schemas.ogf'

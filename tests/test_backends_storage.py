@@ -20,7 +20,7 @@
 Test network resource backend.
 """
 
-#pylint: disable=W0102,C0103,R0904
+#pylint: disable=W0102,C0103,R0904,R0801
 
 
 import mox

@@ -34,10 +34,10 @@ from occi_os_api.nova_glue import vm
 NETWORK_API = network.API()
 COMPUTE_API = compute.API()
 
-LOG = logging.getLogger('nova.occiosapi.wsgi.occi.nova_glue.net')
+LOG = logging.getLogger(__name__)
 
 
-def get_adapter_info(uid, context):
+def get_network_details(uid, context):
     """
     Extracts the VMs network adapter information.
 
@@ -74,7 +74,7 @@ def get_adapter_info(uid, context):
     return result
 
 
-def add_floating_ip_to_vm(uid, context):
+def add_floating_ip(uid, context):
     """
     Adds an ip to an VM instance.
 
@@ -104,9 +104,6 @@ def add_floating_ip_to_vm(uid, context):
     except exception.NoFloatingIpInterface:
         msg = 'l3driver call to add floating ip failed'
         raise AttributeError(msg)
-    except Exception as error:
-        msg = 'Error. Unable to associate floating ip: ' + str(error)
-        raise AttributeError(msg)
     return float_address
 
 
@@ -120,7 +117,9 @@ def remove_floating_ip(uid, address, context):
     """
     vm_instance = vm.get_vm(uid, context)
 
-    # TODO: check exception handling!
-
-    NETWORK_API.disassociate_floating_ip(context, vm_instance, address)
-    NETWORK_API.release_floating_ip(context, address)
+    try:
+        NETWORK_API.disassociate_floating_ip(context, vm_instance, address)
+        NETWORK_API.release_floating_ip(context, address)
+    except exception.FloatingIpNotAssociated:
+        raise AttributeError('Unable to disassociate an unassociated '
+                             'floating up!')

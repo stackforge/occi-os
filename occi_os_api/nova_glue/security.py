@@ -20,17 +20,18 @@
 Security related 'glue'
 """
 
+# L8R: Check exception handling of this routines!
+
 from nova import compute
 from nova import db
 from nova.flags import FLAGS
 from nova.openstack.common import importutils
 
-# connect to nova
 from occi import exceptions
 
+# connect to nova
 COMPUTE_API = compute.API()
 
-# SEC_HANDLER = utils.import_object(FLAGS.security_group_handler)
 SEC_HANDLER = importutils.import_object(FLAGS.security_group_handler)
 
 
@@ -102,8 +103,10 @@ def create_rule(rule, context):
     rule -- The rule.
     context -- The os context.
     """
-    # TODO: check exception handling!
-    db.security_group_rule_create(context, rule)
+    try:
+        db.security_group_rule_create(context, rule)
+    except Exception as err:
+        raise AttributeError('Unable to create rule: ' + str(err))
 
 
 def remove_rule(rule, context):
@@ -113,21 +116,17 @@ def remove_rule(rule, context):
     rule -- The rule
     context -- The os context.
     """
-    # TODO: check exception handling!
     group_id = rule['parent_group_id']
-    # TODO(dizz): method seems to be gone!
-    # self.compute_api.ensure_default_security_group(extras['nova_ctx'])
-    security_group = db.security_group_get(context, group_id)
 
-    db.security_group_rule_destroy(context, rule['id'])
-    SEC_HANDLER.trigger_security_group_rule_destroy_refresh(context,
-        [rule['id']])
-    # TODO: method is one!
-    #COMPUTE_API.trigger_security_group_rules_refresh(context,
-    #                                                 security_group['id'])
+    try:
+        db.security_group_rule_destroy(context, rule['id'])
+        SEC_HANDLER.trigger_security_group_rule_destroy_refresh(context,
+            [rule['id']])
+    except Exception as err:
+        raise AttributeError('Unable to remove rule: ' + str(err))
 
 
-def get_rule(uid, context):
+def retrieve_rule(uid, context):
     """
     Retrieve a rule.
 
@@ -135,8 +134,7 @@ def get_rule(uid, context):
     context -- The os context.
     """
     try:
-        rule = db.security_group_rule_get(context,
+        return db.security_group_rule_get(context,
                                           int(uid))
     except Exception:
         raise exceptions.HTTPError(404, 'Rule not found!')
-    return rule

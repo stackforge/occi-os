@@ -26,6 +26,8 @@ from nova import exception
 from nova import volume
 from nova.image import glance
 
+from cinder import exception as cinder_ex
+
 from occi import exceptions
 
 # Connection to the nova APIs
@@ -45,8 +47,7 @@ def create_storage(size, context, name=None, description=None):
     name -- defaults to a random number if needed.
     description -- defaults to the name
     """
-    # TODO: exception handling!
-    # TODO(dizz): A blueprint?
+    # L8R: A blueprint?
     # OpenStack deals with size in terms of integer.
     # Need to convert float to integer for now and only if the float
     # can be losslessly converted to integer
@@ -67,11 +68,15 @@ def create_storage(size, context, name=None, description=None):
     else:
         disp_descr = disp_name
 
-    new_volume = VOLUME_API.create(context,
-                                   size,
-                                   disp_name,
-                                   disp_descr)
-    return new_volume
+    try:
+        return VOLUME_API.create(context,
+                                 size,
+                                 disp_name,
+                                 disp_descr)
+    except cinder_ex.VolumeSizeExceedsAvailableQuota:
+        raise AttributeError('The volume size quota has been reached!')
+    except cinder_ex.VolumeLimitExceeded:
+        raise AttributeError('The # of volumes quota has been reached!')
 
 
 def delete_storage_instance(uid, context):
@@ -81,9 +86,11 @@ def delete_storage_instance(uid, context):
     uid -- Id of the volume.
     context -- The os context.
     """
-    # TODO: exception handling!
-    instance = get_storage(uid, context)
-    VOLUME_API.delete(context, instance)
+    try:
+        instance = get_storage(uid, context)
+        VOLUME_API.delete(context, instance)
+    except cinder_ex.InvalidVolume:
+        raise AttributeError('Volume is in wrong state or still attached!')
 
 
 def snapshot_storage_instance(uid, name, description, context):
@@ -93,9 +100,11 @@ def snapshot_storage_instance(uid, name, description, context):
     uid -- Id of the volume.
     context -- The os context.
     """
-    # TODO: exception handling!
-    instance = get_storage(uid, context)
-    VOLUME_API.create_snapshot(context, instance, name, description)
+    try:
+        instance = get_storage(uid, context)
+        VOLUME_API.create_snapshot(context, instance, name, description)
+    except cinder_ex.InvalidVolume:
+        raise AttributeError('Volume is in wrong state!')
 
 
 def get_image(uid, context):
@@ -148,7 +157,7 @@ def get_storage(uid, context):
     return instance
 
 
-def get_storages(context):
+def get_storage_volumes(context):
     """
     Retrieve all storage entities from user.
     """

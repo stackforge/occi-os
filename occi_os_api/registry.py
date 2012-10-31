@@ -127,7 +127,7 @@ class OCCIRegistry(occi_registry.NonePersistentRegistry):
 
         vms = vm.get_vms(context)
         vm_res_ids = [item['uuid'] for item in vms]
-        stors = storage.get_storages(context)
+        stors = storage.get_storage_volumes(context)
         stor_res_ids = [item['id'] for item in stors]
 
         if (key, context.user_id) in self.cache:
@@ -205,7 +205,7 @@ class OCCIRegistry(occi_registry.NonePersistentRegistry):
         vms = vm.get_vms(context)
         vm_res_ids = [item['uuid'] for item in vms]
 
-        stors = storage.get_storages(context)
+        stors = storage.get_storage_volumes(context)
         stor_res_ids = [item['id'] for item in stors]
 
         for item in self.cache.values():
@@ -301,7 +301,7 @@ class OCCIRegistry(occi_registry.NonePersistentRegistry):
         entity.mixins.append(os_tmp)
 
         # 3. network links & get links from cache!
-        net_links = net.get_adapter_info(identifier, context)
+        net_links = net.get_network_details(identifier, context)
         for item in net_links['public']:
             link = self._construct_network_link(item, entity, self.pub_net,
                 extras)

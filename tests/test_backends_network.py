@@ -25,7 +25,6 @@ Test network resource backend.
 import mox
 import unittest
 from occi import core_model
-from occi.extensions import infrastructure
 
 from occi_os_api import nova_glue
 from occi_os_api.backends import network
@@ -90,8 +89,8 @@ class TestNetworkInterfaceBackend(unittest.TestCase):
 
         link = core_model.Link('foo', None, [], source, target)
 
-        self.mox.StubOutWithMock(nova_glue.net, 'add_floating_ip_to_vm')
-        nova_glue.net.add_floating_ip_to_vm(mox.IsA(object),
+        self.mox.StubOutWithMock(nova_glue.net, 'add_floating_ip')
+        nova_glue.net.add_floating_ip(mox.IsA(object),
             mox.IsA(object)).AndReturn('10.0.0.1')
 
         self.mox.ReplayAll()

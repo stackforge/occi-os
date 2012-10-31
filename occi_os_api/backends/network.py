@@ -79,7 +79,7 @@ class NetworkInterfaceBackend(backend.KindBackend):
         """
         if link.target.identifier == '/network/public':
             # public means floating IP in OS!
-            address = net.add_floating_ip_to_vm(link.source.attributes[
+            address = net.add_floating_ip(link.source.attributes[
                                                     'occi.core.id'],
                                                 extras['nova_ctx'])
             link.attributes['occi.networkinterface.interface'] = 'eth0'
