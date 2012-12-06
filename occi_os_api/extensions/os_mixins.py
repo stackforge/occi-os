@@ -39,9 +39,8 @@ class OsTemplate(core_model.Mixin):
 
 class ResourceTemplate(core_model.Mixin):
     """
-    Here to make identificaiton of template type easier in backends.
+    Here to make identification of template type easier in backends.
     """
-
     pass
 
 

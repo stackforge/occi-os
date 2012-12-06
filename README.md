@@ -60,4 +60,5 @@ There is further documentation on [setting up your development environment
 in the wiki](https://github.com/tmetsch/occi-os/wiki/DevEnv).
 
 # Deployment using Puppet
-This library can be integrated using puppet as a configuration management tool. See [this blog post for more details](http://www.cloudcomp.ch/2012/09/automating-occi-installations/).
+This library can be integrated using puppet as a configuration management tool.
+See [this blog post for more details](http://www.cloudcomp.ch/2012/09/automating-occi-installations/).

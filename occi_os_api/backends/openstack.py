@@ -39,10 +39,21 @@ class OsComputeBackend(backend.MixinBackend, backend.ActionBackend):
         """
         Add OpenStack related actions.
         """
+        uid = entity.attributes['occi.core.id']
+        context = extras['nova_ctx']
+
         if 'occi.compute.state' in entity.attributes and  entity.attributes[
                   'occi.compute.state'] == 'active':
             entity.actions.append(os_addon.OS_CREATE_IMAGE)
             entity.actions.append(os_addon.OS_CHG_PWD)
+
+        console = vm.get_vnc(uid, context)
+        if console:
+            entity.attributes['org.openstack.compute.console.vnc'] =\
+            console['url']
+        else:
+            entity.attributes['org.openstack.compute.console.vnc'] = 'N/A'
+
 
     def action(self, entity, action, attributes, extras):
         """

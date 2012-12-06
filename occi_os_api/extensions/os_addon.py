@@ -63,6 +63,8 @@ OS_CREATE_IMAGE = core_model.Action(
                  _OS_CREATE_IMAGE_ATTRIBUTES)
 
 # A Mixin for OpenStack VMs
+_OS_VM_ATTRIBUTES = {'org.openstack.compute.console.vnc': 'immutable'}
 OS_VM = core_model.Mixin(
     'http://schemas.openstack.org/instance/instance#',
-    'os_vms', actions=[OS_CHG_PWD, OS_CREATE_IMAGE])
+    'os_vms', actions=[OS_CHG_PWD, OS_CREATE_IMAGE],
+    attributes=_OS_VM_ATTRIBUTES)
