@@ -45,7 +45,6 @@ from occi import backend
 from occi import core_model
 from occi import wsgi as occi_wsgi
 from occi.extensions import infrastructure
-from occiosapi.extensions.os_mixins import UserSecurityGroupMixin
 
 LOG = logging.getLogger(__name__)
 
@@ -233,7 +232,7 @@ class OCCIApplication(occi_wsgi.Application, wsgi.Application):
 
         for group in groups:
             if group['name'] not in excld_grps:
-                sec_mix = UserSecurityGroupMixin(
+                sec_mix = os_mixins.UserSecurityGroupMixin(
                 term=group['name'],
                 scheme=sec_grp,
                 related=[os_addon.SEC_GROUP],
