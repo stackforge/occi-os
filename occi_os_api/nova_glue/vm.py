@@ -1,3 +1,4 @@
+# coding=utf-8
 # vim: tabstop=4 shiftwidth=4 softtabstop=4
 
 #
@@ -34,8 +35,8 @@ from nova.flags import FLAGS
 from occi import exceptions
 from occi.extensions import infrastructure
 
-from occiosapi.extensions import os_mixins
-from occiosapi.extensions import os_addon
+from occi_os_api.extensions import os_mixins
+from occi_os_api.extensions import os_addon
 
 import logging
 
@@ -172,7 +173,7 @@ def resize_vm(uid, flavor_name, context):
                            **kwargs)
         ready = False
         i = 0
-        while i < 15:
+        while not ready or i < 15:
             i += 1
             state = get_vm(uid, context)['vm_state']
             if state == 'resized':
@@ -265,8 +266,8 @@ def stop_vm(uid, context):
     instance = get_vm(uid, context)
 
     try:
-        # TODO(dizz): There are issues with the stop and start methods of
-        #             OS. For now we'll use suspend.
+        # There are issues with the stop and start methods of OS. For now
+        # we'll use suspend.
         # self.compute_api.stop(context, instance)
         COMPUTE_API.suspend(context, instance)
     except Exception as error:
@@ -299,8 +300,6 @@ def restart_vm(uid, method, context):
         COMPUTE_API.reboot(context, instance, reboot_type)
     except exception.InstanceInvalidState:
         raise exceptions.HTTPError(406, 'VM is in an invalid state.')
-    except Exception as error:
-        raise exceptions.HTTPError(500, 'Error in reboot %s' % error)
 
 
 def attach_volume(instance_id, volume_id, mount_point, context):
@@ -312,23 +311,19 @@ def attach_volume(instance_id, volume_id, mount_point, context):
     mount_point -- Where to mount.
     context -- The os security context.
     """
-    # TODO: check exception handling!
     instance = get_vm(instance_id, context)
     try:
         vol_instance = VOLUME_API.get(context, volume_id)
-    except exception.NotFound:
-        raise exceptions.HTTPError(404, 'Volume not found!')
-    volume_id = vol_instance['id']
-
-    try:
+        volume_id = vol_instance['id']
         COMPUTE_API.attach_volume(
             context,
             instance,
             volume_id,
             mount_point)
-    except Exception as error:
-        LOG.error(str(error))
-        raise error
+    except exception.NotFound:
+        raise exceptions.HTTPError(404, 'Volume not found!')
+    except exception.InvalidDevicePath:
+        raise AttributeError('Invalid device path!')
 
 
 def detach_volume(volume_id, context):
@@ -338,18 +333,12 @@ def detach_volume(volume_id, context):
     volume_id -- Id of the volume.
     context -- the os context.
     """
-    #try:
-    #    instance = VOLUME_API.get(context, volume_id)
-    #except exception.NotFound:
-    #    raise exceptions.HTTPError(404, 'Volume not found!')
-    #volume_id = instance['id']
-
     try:
-        #TODO(dizz): see issue #15
         COMPUTE_API.detach_volume(context, volume_id)
-    except Exception as error:
-        LOG.error(str(error) + '; with id: ' + volume_id)
-        raise error
+    except exception.InvalidVolume:
+        raise AttributeError('Invalid volume!')
+    except exception.VolumeUnattached:
+        raise AttributeError('Volume is not attached!')
 
 
 def set_password_for_vm(uid, password, context):
@@ -370,7 +359,7 @@ def set_password_for_vm(uid, password, context):
 
 def get_vnc(uid, context):
     """
-    Retrieve VNC console.
+    Retrieve VNC console or None is unavailable.
 
     uid -- id of the instance
     context -- the os context
@@ -397,6 +386,7 @@ def get_vm(uid, context):
         raise exceptions.HTTPError(404, 'VM not found!')
     return instance
 
+
 def get_vms(context):
     """
     Retrieve all VMs in a given context.
@@ -404,6 +394,7 @@ def get_vms(context):
     opts = {'deleted': False}
     tmp = COMPUTE_API.get_all(context, search_opts=opts)
     return tmp
+
 
 def get_occi_state(uid, context):
     """
@@ -439,7 +430,6 @@ def get_occi_state(uid, context):
         state = 'inactive'
 
     # Some task states require a state
-    # TODO: check for others!
     if instance['vm_state'] in [task_states.IMAGE_SNAPSHOT]:
         state = 'inactive'
         actions = []

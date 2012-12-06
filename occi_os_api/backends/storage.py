@@ -21,12 +21,19 @@ Backends for the storage resource.
 """
 
 #pylint: disable=R0201,W0232,W0613
+from datetime import date
+
+import logging
 import uuid
 
 from occi import backend
 from occi import exceptions
 from occi.extensions import infrastructure
-from occiosapi.nova_glue import storage, vm
+
+from occi_os_api.nova_glue import storage
+from occi_os_api.nova_glue import vm
+
+LOG = logging.getLogger(__name__)
 
 
 class StorageBackend(backend.KindBackend, backend.ActionBackend):
@@ -56,7 +63,7 @@ class StorageBackend(backend.KindBackend, backend.ActionBackend):
         entity.identifier = infrastructure.STORAGE.location + vol_id
 
         if new_volume['status'] == 'available':
-            entity.attributes['occi.storage.state'] = 'online'
+            entity.attributes['occi.storage.state'] = 'active'
 
         entity.actions = [infrastructure.OFFLINE, infrastructure.BACKUP,
                             infrastructure.SNAPSHOT, infrastructure.RESIZE]
@@ -80,34 +87,24 @@ class StorageBackend(backend.KindBackend, backend.ActionBackend):
                               infrastructure.SNAPSHOT, infrastructure.RESIZE]
         else:
             entity.attributes['occi.storage.state'] = 'offline'
+            entity.actions = [infrastructure.ONLINE]
 
     def update(self, old, new, extras):
         """
         Updates simple attributes of a storage resource:
         occi.core.title, occi.core.summary
         """
-        # TODO: proper set the state of an storage instance!
-
         # update attributes.
         if len(new.attributes) > 0:
             # support only title and summary changes now.
-            if (('occi.core.title' in new.attributes)
-                or ('occi.core.title' in new.attributes)):
-                if len(new.attributes['occi.core.title']) > 0:
-                    old.attributes['occi.core.title'] = \
-                    new.attributes['occi.core.title']
-
-                if len(new.attributes['occi.core.summary']) > 0:
-                    old.attributes['occi.core.summary'] = \
-                    new.attributes['occi.core.summary']
-            else:
-                raise AttributeError('Cannot update the supplied attributes.')
-
-    def replace(self, old, new, extras):
-        """
-        Ignored.
-        """
-        pass
+            if 'occi.core.title' in new.attributes and \
+                len(new.attributes['occi.core.title']) > 0:
+                old.attributes['occi.core.title'] = \
+                new.attributes['occi.core.title']
+            if 'occi.core.title' in new.attributes and\
+               len(new.attributes['occi.core.summary']) > 0:
+                old.attributes['occi.core.summary'] = \
+                new.attributes['occi.core.summary']
 
     def delete(self, entity, extras):
         """
@@ -124,80 +121,19 @@ class StorageBackend(backend.KindBackend, backend.ActionBackend):
         """
         if action not in entity.actions:
             raise AttributeError("This action is currently no applicable.")
-
-        elif action == infrastructure.ONLINE:
-            # ONLINE, ready for service, default state of a created volume.
-            # could this cover the attach functionality in storage link?
-            # The following is not an approach to use:
-            # self.volume_api.initialize_connection(context, volume, connector)
-
-            # By default storage is ONLINE and can not be brought OFFLINE
-
-            msg = 'Online storage action requested resource with id: %s' % \
-                                                            entity.identifier
-            raise AttributeError(msg)
-
-        elif action == infrastructure.OFFLINE:
-            # OFFLINE, disconnected? disconnection supported in API otherwise
-            # not. The following is not an approach to use:
-            # self.volume_api.terminate_connection(context, volume, connector)
-
-            # By default storage cannot be brought OFFLINE
-            msg = 'Offline storage action requested for resource: %s' % \
-                                                            entity.identifier
-            raise AttributeError(msg)
-
-        elif action == infrastructure.BACKUP:
-            # BACKUP: create a complete copy of the volume.
-            msg = 'Backup action for storage resource with id: %s' % \
-                                                            entity.identifier
-            raise AttributeError(msg)
-
+        elif action in [infrastructure.ONLINE, infrastructure.OFFLINE,
+                      infrastructure.BACKUP, infrastructure.RESIZE]:
+            LOG.warn('The operations online, offline, backup and resize are '
+                     'currently not supported!')
         elif action == infrastructure.SNAPSHOT:
-            # CDMI?!
-            # SNAPSHOT: create a time-stamped copy of the volume? Supported in
-            # OS volume API
-            volume_id = int(entity.attributes['occi.core.id'])
-            # occi.core.title, occi.core.summary
-            name = 'snapshot name'
-            description = 'snapshot description'
+            volume_id = entity.attributes['occi.core.id']
+            name = volume_id + date.today().isoformat()
+            if 'occi.core.summary' in entity.attributes:
+                description = entity.attributes['occi.core.summary']
+            else:
+                description = 'N/A'
             storage.snapshot_storage_instance(volume_id, name, description,
-                                          extras['nova_ctx'])
-
-        elif action == infrastructure.RESIZE:
-            # TODO(dizz): not supported by API. A blueprint candidate?
-            # RESIZE: increase, decrease size of volume. Not supported directly
-            #         by the API
-
-            msg = 'Resize storage actio requested resource with id: %s' % \
-                                                            entity.identifier
-            raise AttributeError(msg)
-
-
-def get_inst_to_attach(link):
-    """
-    Gets the compute instance that is to have the storage attached.
-    """
-    if link.target.kind == infrastructure.COMPUTE:
-        uid = link.target.attributes['occi.core.id']
-    elif link.source.kind == infrastructure.COMPUTE:
-        uid = link.source.attributes['occi.core.id']
-    else:
-        raise AttributeError('Id of the VM not found!')
-    return uid
-
-
-def get_vol_to_attach(link):
-    """
-    Gets the storage instance that is to have the compute attached.
-    """
-    if link.target.kind == infrastructure.STORAGE:
-        uid = link.target.attributes['occi.core.id']
-    elif link.source.kind == infrastructure.STORAGE:
-        uid = link.source.attributes['occi.core.id']
-    else:
-        raise AttributeError('Id of the Volume not found!')
-    return uid
+                                              extras['nova_ctx'])
 
 
 class StorageLinkBackend(backend.KindBackend):
@@ -205,16 +141,14 @@ class StorageLinkBackend(backend.KindBackend):
     A backend for the storage links.
     """
 
-    # TODO: need to implement retrieve so states get updated!!!!
-
     def create(self, link, extras):
         """
         Creates a link from a compute instance to a storage volume.
         The user must specify what the device id is to be.
         """
         context = extras['nova_ctx']
-        instance_id = get_inst_to_attach(link)
-        volume_id = get_vol_to_attach(link)
+        instance_id = link.source.attributes['occi.core.id']
+        volume_id = link.target.attributes['occi.core.id']
         mount_point = link.attributes['occi.storagelink.deviceid']
 
         vm.attach_volume(instance_id, volume_id, mount_point, context)
@@ -225,19 +159,9 @@ class StorageLinkBackend(backend.KindBackend):
         link.attributes['occi.storagelink.mountpoint'] = ''
         link.attributes['occi.storagelink.state'] = 'active'
 
-    def retrieve(self, entity, extras):
-        """
-        Get most up to date attribute informations.
-        """
-        # occi.storagelink.deviceid
-        # occi.storagelink.mountpoint
-        # occi.storagelink.state
-        pass
-
     def delete(self, link, extras):
         """
         Unlinks the the compute from the storage resource.
         """
-        volume_id = get_vol_to_attach(link)
+        volume_id = link.target.attributes['occi.core.id']
         vm.detach_volume(volume_id, extras['nova_ctx'])
-

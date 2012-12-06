@@ -26,7 +26,7 @@ Network resource backend.
 
 
 from occi import backend
-from occiosapi.nova_glue import net
+from occi_os_api.nova_glue import net
 
 
 class NetworkBackend(backend.KindBackend, backend.ActionBackend):
@@ -77,12 +77,17 @@ class NetworkInterfaceBackend(backend.KindBackend):
         """
         As nova does not support creation of L2 networks we don't.
         """
-        # TODO: add all network info!
         if link.target.identifier == '/network/public':
             # public means floating IP in OS!
-            address = net.add_floating_ip_to_vm(link.source.attributes['occi.core.id'],
-                extras['nova_ctx'])
+            address = net.add_floating_ip(link.source.attributes[
+                                                    'occi.core.id'],
+                                                extras['nova_ctx'])
+            link.attributes['occi.networkinterface.interface'] = 'eth0'
+            link.attributes['occi.networkinterface.mac'] = 'aa:bb:cc:dd:ee:ff'
+            link.attributes['occi.networkinterface.state'] = 'active'
             link.attributes['occi.networkinterface.address'] = address
+            link.attributes['occi.networkinterface.gateway'] = '0.0.0.0'
+            link.attributes['occi.networkinterface.allocation'] = 'static'
         else:
             raise AttributeError('Currently not supported.')
 
@@ -101,4 +106,3 @@ class NetworkInterfaceBackend(backend.KindBackend):
             net.remove_floating_ip(link.source.attributes['occi.core.id'],
                 link.attributes['occi.networkinterface.address'],
                 extras['nova_ctx'])
-

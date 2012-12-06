@@ -1,3 +1,4 @@
+# coding=utf-8
 # vim: tabstop=4 shiftwidth=4 softtabstop=4
 
 #
@@ -25,17 +26,18 @@ from nova import network
 from nova import exception
 from nova import compute
 from nova.compute import utils
-from occiosapi.nova_glue import vm
+
+from occi_os_api.nova_glue import vm
 
 # Connect to nova :-)
 
 NETWORK_API = network.API()
 COMPUTE_API = compute.API()
 
-LOG = logging.getLogger('nova.occiosapi.wsgi.occi.nova_glue.net')
+LOG = logging.getLogger(__name__)
 
 
-def get_adapter_info(uid, context):
+def get_network_details(uid, context):
     """
     Extracts the VMs network adapter information.
 
@@ -44,7 +46,7 @@ def get_adapter_info(uid, context):
     """
     vm_instance = vm.get_vm(uid, context)
 
-    result = {'public':[], 'admin':[]}
+    result = {'public': [], 'admin': []}
     try:
         net_info = NETWORK_API.get_instance_nw_info(context, vm_instance)[0]
     except IndexError:
@@ -56,13 +58,13 @@ def get_adapter_info(uid, context):
 
     tmp = net_info['network']['subnets'][0]['ips'][0]
     for item in tmp['floating_ips']:
-        result['public'].append({'interface':'eth0',
-                                 'mac':'aa:bb:cc:dd:ee:ff',
+        result['public'].append({'interface': 'eth0',
+                                 'mac': 'aa:bb:cc:dd:ee:ff',
                                  'state': 'active',
                                  'address': item['address'],
                                  'gateway': '0.0.0.0',
                                  'allocation': 'static'})
-    result['admin'].append({'interface':'eth0',
+    result['admin'].append({'interface': 'eth0',
                             'mac': mac,
                             'state': 'active',
                             'address': tmp['address'],
@@ -72,7 +74,7 @@ def get_adapter_info(uid, context):
     return result
 
 
-def add_floating_ip_to_vm(uid, context):
+def add_floating_ip(uid, context):
     """
     Adds an ip to an VM instance.
 
@@ -102,9 +104,6 @@ def add_floating_ip_to_vm(uid, context):
     except exception.NoFloatingIpInterface:
         msg = 'l3driver call to add floating ip failed'
         raise AttributeError(msg)
-    except Exception as error:
-        msg = 'Error. Unable to associate floating ip: ' + str(error)
-        raise AttributeError(msg)
     return float_address
 
 
@@ -118,7 +117,9 @@ def remove_floating_ip(uid, address, context):
     """
     vm_instance = vm.get_vm(uid, context)
 
-    # TODO: check exception handling!
-
-    NETWORK_API.disassociate_floating_ip(context, vm_instance, address)
-    NETWORK_API.release_floating_ip(context, address)
+    try:
+        NETWORK_API.disassociate_floating_ip(context, vm_instance, address)
+        NETWORK_API.release_floating_ip(context, address)
+    except exception.FloatingIpNotAssociated:
+        raise AttributeError('Unable to disassociate an unassociated '
+                             'floating up!')

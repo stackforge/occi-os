@@ -20,17 +20,23 @@
 OCCI registry
 """
 
-#R0201:method could be func.E1002:old style obj
-#pylint: disable=R0201,E1002
+#R0201:method could be func.E1002:old style obj,R0914-R0912:# of branches
+#E1121:# positional args.
+#pylint: disable=R0201,E1002,R0914,R0912,E1121
+
 import uuid
 
 from occi import registry as occi_registry
 from occi import core_model
 from occi.extensions import infrastructure
-from occiosapi.backends import openstack
-from occiosapi.extensions import os_addon
 
-from occiosapi.nova_glue import vm, storage, net
+from occi_os_api.backends import openstack
+from occi_os_api.extensions import os_addon
+
+from occi_os_api.nova_glue import vm
+from occi_os_api.nova_glue import storage
+from occi_os_api.nova_glue import net
+
 
 class OCCIRegistry(occi_registry.NonePersistentRegistry):
     """
@@ -43,6 +49,11 @@ class OCCIRegistry(occi_registry.NonePersistentRegistry):
     def __init__(self):
         super(OCCIRegistry, self).__init__()
         self.cache = {}
+        self.adm_net = core_model.Resource('/network/admin',
+            infrastructure.NETWORK, [infrastructure.IPNETWORK])
+        self.pub_net = core_model.Resource('/network/public',
+            infrastructure.NETWORK, [infrastructure.IPNETWORK])
+
         self._setup_network()
 
     def get_extras(self, extras):
@@ -116,14 +127,14 @@ class OCCIRegistry(occi_registry.NonePersistentRegistry):
 
         vms = vm.get_vms(context)
         vm_res_ids = [item['uuid'] for item in vms]
-        stors = storage.get_storages(context)
+        stors = storage.get_storage_volumes(context)
         stor_res_ids = [item['id'] for item in stors]
 
         if (key, context.user_id) in self.cache:
             # I have seen it - need to update or delete if gone in OS!
             # I have already seen it
             cached_item = self.cache[(key, context.user_id)]
-            if not iden in vm_res_ids and cached_item.kind ==\
+            if not iden in vm_res_ids and cached_item.kind == \
                infrastructure.COMPUTE:
                 # it was delete in OS -> remove links, cache + KeyError!
                 # can delete it because it was my item!
@@ -131,7 +142,7 @@ class OCCIRegistry(occi_registry.NonePersistentRegistry):
                     self.cache.pop((link.identifier, repr(extras)))
                 self.cache.pop((key, repr(extras)))
                 raise KeyError
-            if not iden in stor_res_ids and cached_item.kind ==\
+            if not iden in stor_res_ids and cached_item.kind == \
                infrastructure.STORAGE:
                 # it was delete in OS -> remove from cache + KeyError!
                 # can delete it because it was my item!
@@ -154,9 +165,9 @@ class OCCIRegistry(occi_registry.NonePersistentRegistry):
             # construct it.
             if iden in vm_res_ids:
                 # create new & add to cache!
-                result = self._construct_occi_compute(iden, vms, extras)[0]
+                result = self._construct_occi_compute(iden, extras)[0]
             elif iden in stor_res_ids:
-                result = self._construct_occi_storage(iden, stors, extras)[0]
+                result = self._construct_occi_storage(iden, extras)[0]
             else:
                 # doesn't exist!
                 raise KeyError
@@ -194,7 +205,7 @@ class OCCIRegistry(occi_registry.NonePersistentRegistry):
         vms = vm.get_vms(context)
         vm_res_ids = [item['uuid'] for item in vms]
 
-        stors = storage.get_storages(context)
+        stors = storage.get_storage_volumes(context)
         stor_res_ids = [item['id'] for item in stors]
 
         for item in self.cache.values():
@@ -206,23 +217,27 @@ class OCCIRegistry(occi_registry.NonePersistentRegistry):
             if item.extras is None:
                 # add to result set
                 result.append(item)
-            elif item_id in vm_res_ids and item.kind == infrastructure.COMPUTE:
+            elif item_id in vm_res_ids and item.kind == \
+                 infrastructure.COMPUTE:
                 # check & update (take links, mixins from cache)
                 # add compute and it's links to result
                 self._update_occi_compute(item, extras)
                 result.append(item)
                 result.extend(item.links)
-            elif item_id in stor_res_ids and item.kind == infrastructure.STORAGE:
+            elif item_id in stor_res_ids and item.kind == \
+                 infrastructure.STORAGE:
                 # check & update (take links, mixins from cache)
                 # add compute and it's links to result
                 self._update_occi_storage(item, extras)
                 result.append(item)
-            elif item_id not in vm_res_ids and item.kind == infrastructure.COMPUTE:
+            elif item_id not in vm_res_ids and item.kind == \
+                 infrastructure.COMPUTE:
                 # remove item and it's links from cache!
                 for link in item.links:
                     self.cache.pop((link.identifier, item.extras['user_id']))
                 self.cache.pop((item.identifier, item.extras['user_id']))
-            elif item_id not in stor_res_ids and item.kind == infrastructure.STORAGE:
+            elif item_id not in stor_res_ids and item.kind == \
+                 infrastructure.STORAGE:
                 # remove item
                 self.cache.pop((item.identifier, item.extras['user_id']))
         for item in vms:
@@ -232,8 +247,7 @@ class OCCIRegistry(occi_registry.NonePersistentRegistry):
             else:
                 # construct (with links and mixins and add to cache!
                 # add compute and it's linke to result
-                ent_list = self._construct_occi_compute(item['uuid'], vms,
-                    extras)
+                ent_list = self._construct_occi_compute(item['uuid'], extras)
                 result.extend(ent_list)
         for item in stors:
             if (infrastructure.STORAGE.location + item['id'],
@@ -242,8 +256,7 @@ class OCCIRegistry(occi_registry.NonePersistentRegistry):
             else:
                 # construct (with links and mixins and add to cache!
                 # add compute and it's linke to result
-                ent_list = self._construct_occi_storage(item['id'], stors,
-                    extras)
+                ent_list = self._construct_occi_storage(item['id'], extras)
                 result.extend(ent_list)
 
         return result
@@ -251,11 +264,14 @@ class OCCIRegistry(occi_registry.NonePersistentRegistry):
     # Not part of parent
 
     def _update_occi_compute(self, entity, extras):
+        """
+        Update an occi compute resource instance.
+        """
         # TODO: implement update of mixins and links (remove old mixins and
         # links)!
         return entity
 
-    def _construct_occi_compute(self, identifier, vms, extras):
+    def _construct_occi_compute(self, identifier, extras):
         """
         Construct a OCCI compute instance.
 
@@ -285,7 +301,7 @@ class OCCIRegistry(occi_registry.NonePersistentRegistry):
         entity.mixins.append(os_tmp)
 
         # 3. network links & get links from cache!
-        net_links = net.get_adapter_info(identifier, context)
+        net_links = net.get_network_details(identifier, context)
         for item in net_links['public']:
             link = self._construct_network_link(item, entity, self.pub_net,
                 extras)
@@ -303,10 +319,12 @@ class OCCIRegistry(occi_registry.NonePersistentRegistry):
         return result
 
     def _update_occi_storage(self, entity, extras):
-        # TODO: is there sth to do here??
+        """
+        Update a storage resource instance.
+        """
         return entity
 
-    def _construct_occi_storage(self, identifier, stors, extras):
+    def _construct_occi_storage(self, identifier, extras):
         """
         Construct a OCCI storage instance.
 
@@ -347,8 +365,6 @@ class OCCIRegistry(occi_registry.NonePersistentRegistry):
         Add a public and an admin network interface.
         """
         # TODO: read from openstack!
-        self.pub_net = core_model.Resource('/network/public',
-            infrastructure.NETWORK, [infrastructure.IPNETWORK])
         self.pub_net.attributes = {'occi.network.vlan': 'external',
                                    'occi.network.label': 'default',
                                    'occi.network.state': 'active',
@@ -359,12 +375,11 @@ class OCCIRegistry(occi_registry.NonePersistentRegistry):
                                                                     '.0.1',
                                    'occi.networkinterface.allocation':
                                        'static'}
-        self.adm_net = core_model.Resource('/network/admin',
-            infrastructure.NETWORK, [infrastructure.IPNETWORK])
         self.adm_net.attributes = {'occi.network.vlan': 'admin',
                                    'occi.network.label': 'default',
                                    'occi.network.state': 'active',
-                                   'occi.networkinterface.address': '10.0.0.0/24',
+                                   'occi.networkinterface.address': '10.0.0'
+                                                                    '.0/24',
                                    'occi.networkinterface.gateway': '10.0.0'
                                                                     '.1',
                                    'occi.networkinterface.allocation':

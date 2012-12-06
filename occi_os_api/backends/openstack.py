@@ -25,10 +25,10 @@ import random
 from occi import backend
 from occi import exceptions
 
-from occiosapi.extensions import os_addon
+from occi_os_api.extensions import os_addon
+from occi_os_api.nova_glue import vm
+from occi_os_api.nova_glue import security
 
-from occiosapi.nova_glue import vm
-from occiosapi.nova_glue import security
 
 class OsComputeBackend(backend.MixinBackend, backend.ActionBackend):
     """
@@ -40,10 +40,7 @@ class OsComputeBackend(backend.MixinBackend, backend.ActionBackend):
         Add OpenStack related actions.
         """
         if 'occi.compute.state' in entity.attributes and  entity.attributes[
-                                                      'occi.compute' \
-                                                        '.state'] ==' \
-                                                                       ' ' \
-                                                                ''active':
+                  'occi.compute.state'] == 'active':
             entity.actions.append(os_addon.OS_CREATE_IMAGE)
             entity.actions.append(os_addon.OS_CHG_PWD)
 
@@ -137,7 +134,7 @@ class SecurityRuleBackend(backend.KindBackend):
         """
         try:
             context = extras['nova_ctx']
-            rule = security.get_rule(entity.attributes['occi.core.id'],
+            rule = security.retrieve_rule(entity.attributes['occi.core.id'],
                                      context)
 
             security.remove_rule(rule, context)
@@ -149,8 +146,6 @@ def make_sec_rule(entity, sec_grp_id):
     """
     Create and validate the security rule.
     """
-    # TODO: add some checks for missing attributes!
-
     name = random.randrange(0, 99999999)
     sg_rule = {'id': name,
                'parent_group_id': sec_grp_id}
