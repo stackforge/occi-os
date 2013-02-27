@@ -37,6 +37,7 @@ from occi_os_api.nova_glue import vm
 from occi_os_api.nova_glue import storage
 from occi_os_api.nova_glue import net
 
+from nova.flags import FLAGS
 
 class OCCIRegistry(occi_registry.NonePersistentRegistry):
     """
@@ -55,6 +56,11 @@ class OCCIRegistry(occi_registry.NonePersistentRegistry):
             infrastructure.NETWORK, [infrastructure.IPNETWORK])
 
         self._setup_network()
+
+    def set_hostname(self, hostname):
+        if FLAGS.occi_custom_location_hostname:
+            hostname = FLAGS.occi_custom_location_hostname
+        super(OCCIRegistry, self).set_hostname(hostname)
 
     def get_extras(self, extras):
         """
