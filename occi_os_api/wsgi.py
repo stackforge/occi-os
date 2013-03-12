@@ -125,6 +125,8 @@ class OCCIApplication(occi_wsgi.Application, wsgi.Application):
             openstack.OsComputeBackend())
         self.register_backend(os_addon.OS_CREATE_IMAGE,
             openstack.OsComputeBackend())
+        self.register_backend(os_addon.OS_KEY_PAIR_EXT,
+            openstack.OsComputeBackend())
         self.register_backend(os_addon.OS_CHG_PWD,
             openstack.OsComputeBackend())
 

@@ -83,6 +83,11 @@ def create_vm(entity, context):
             resource_template = mixin
         elif isinstance(mixin, os_mixins.OsTemplate):
             os_template = mixin
+        elif mixin == os_addon.OS_KEY_PAIR_EXT:
+            attr = 'org.openstack.credentials.publickey.name'
+            key_name = entity.attributes[attr]
+            attr = 'org.openstack.credentials.publickey.data'
+            key_data = entity.attributes[attr]
         # Look for security group. If the group is non-existant, the
         # call to create will fail.
         if os_addon.SEC_GROUP in mixin.related:
