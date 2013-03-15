@@ -45,6 +45,8 @@ from occi import core_model
 from occi import wsgi as occi_wsgi
 from occi.extensions import infrastructure
 
+from urllib import quote
+
 LOG = logging.getLogger(__name__)
 
 #Setup options
@@ -174,14 +176,14 @@ class OCCIApplication(occi_wsgi.Application, wsgi.Application):
                 continue
 
             os_template = os_mixins.OsTemplate(
-                                term=img['name'].strip().replace(' ', '_'),
+                                term=self._transformTerm(img['name']),
                                 scheme=template_schema,
                                 os_id=img['id'],
                                 related=[infrastructure.OS_TEMPLATE],
                                 attributes=None,
                                 title='This is an OS ' + img['name'] + \
                                                             ' VM image',
-                                location='/' + img['name'] + '/')
+                                location='/' + quote(img['name']) + '/')
 
             try:
                 self.registry.get_backend(os_template, extras)
@@ -199,11 +201,11 @@ class OCCIApplication(occi_wsgi.Application, wsgi.Application):
 
         for itype in os_flavours:
             resource_template = os_mixins.ResourceTemplate(
-                term=itype.strip().replace(' ', '_'),
+                term=self._transformTerm(itype),
                 scheme=template_schema,
                 related=[infrastructure.RESOURCE_TEMPLATE],
                 title='This is an openstack ' + itype + ' flavor.',
-                location='/' + itype + '/')
+                location='/' + quote(itype) + '/')
 
             try:
                 self.registry.get_backend(resource_template, extras)
@@ -234,13 +236,19 @@ class OCCIApplication(occi_wsgi.Application, wsgi.Application):
         for group in groups:
             if group['name'] not in excld_grps:
                 sec_mix = os_mixins.UserSecurityGroupMixin(
-                term=group['name'].strip().replace(' ', '_'),
+                term=self._transformTerm(group['name']),
                 scheme=sec_grp,
                 related=[os_addon.SEC_GROUP],
                 attributes=None,
                 title=group['name'],
-                location='/security/' + group['name'] + '/')
+                location='/security/' + quote(group['name']) + '/')
                 try:
                     self.registry.get_backend(sec_mix, extras)
                 except AttributeError:
                     self.register_backend(sec_mix, MIXIN_BACKEND)
+
+    def _transformTerm(self, term):
+        """
+        Transform a term to be compliant with the spec.
+        """
+        return term.strip().replace(' ', '_').replace('(', '_').replace(')', '_').replace('.', '_').lower()
