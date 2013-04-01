@@ -176,7 +176,7 @@ class OCCIApplication(occi_wsgi.Application, wsgi.Application):
                 continue
 
             os_template = os_mixins.OsTemplate(
-                                term=self._transformTerm(img['name']),
+                                term=img['id'], #self._transformTerm(img['name'])
                                 scheme=template_schema,
                                 os_id=img['id'],
                                 related=[infrastructure.OS_TEMPLATE],
@@ -201,7 +201,7 @@ class OCCIApplication(occi_wsgi.Application, wsgi.Application):
 
         for itype in os_flavours:
             resource_template = os_mixins.ResourceTemplate(
-                term=self._transformTerm(itype),
+                term=itype.id,
                 scheme=template_schema,
                 related=[infrastructure.RESOURCE_TEMPLATE],
                 title='This is an openstack ' + itype + ' flavor.',
@@ -236,7 +236,7 @@ class OCCIApplication(occi_wsgi.Application, wsgi.Application):
         for group in groups:
             if group['name'] not in excld_grps:
                 sec_mix = os_mixins.UserSecurityGroupMixin(
-                term=self._transformTerm(group['name']),
+                term=group.id, #self._transformTerm(group['name'])
                 scheme=sec_grp,
                 related=[os_addon.SEC_GROUP],
                 attributes=None,
@@ -247,8 +247,8 @@ class OCCIApplication(occi_wsgi.Application, wsgi.Application):
                 except AttributeError:
                     self.register_backend(sec_mix, MIXIN_BACKEND)
 
-    def _transformTerm(self, term):
-        """
-        Transform a term to be compliant with the spec.
-        """
-        return term.strip().replace(' ', '_').replace('(', '_').replace(')', '_').replace('.', '_').lower()
+#   def _transformTerm(self, term):
+#        """
+#        Transform a term to be compliant with the spec.
+#        """
+#        return term.strip().replace(' ', '_').replace('(', '_').replace(')', '_').replace('.', '_').lower()
