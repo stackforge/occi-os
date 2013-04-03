@@ -297,13 +297,13 @@ class OCCIRegistry(occi_registry.NonePersistentRegistry):
         result.append(entity)
 
         # 2. os and res templates
-        flavor_name = instance['instance_type'].name
-        res_tmp = self.get_category('/' + flavor_name + '/', extras)
+        flavor_id = instance['instance_type'].flavorid
+        res_tmp = self.get_category('/' + flavor_id + '/', extras)
         entity.mixins.append(res_tmp)
 
         os_id = instance['image_ref']
-        image_name = storage.get_image(os_id, context)['name']
-        os_tmp = self.get_category('/' + image_name + '/', extras)
+        image_id = storage.get_image(os_id, context)['id']
+        os_tmp = self.get_category('/' + image_id + '/', extras)
         entity.mixins.append(os_tmp)
 
         # 3. network links & get links from cache!

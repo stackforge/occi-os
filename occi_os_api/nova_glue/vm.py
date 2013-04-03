@@ -37,6 +37,7 @@ from occi.extensions import infrastructure
 
 from occi_os_api.extensions import os_mixins
 from occi_os_api.extensions import os_addon
+from occi_os_api.nova_glue import security
 
 import logging
 
@@ -94,14 +95,15 @@ def create_vm(entity, context):
         # Look for security group. If the group is non-existant, the
         # call to create will fail.
         if os_addon.SEC_GROUP in mixin.related:
-            sg_names.append(mixin.term)
+            secgroup = security.retrieve_group(mixin.term, context)
+            sg_names.append(secgroup["name"])
 
     if not os_template:
         raise AttributeError('Please provide a valid OS Template.')
 
     if resource_template:
         inst_type = compute.instance_types.\
-        get_instance_type_by_name(resource_template.term)
+            get_instance_type_by_flavor_id(resource_template.term)
     else:
         inst_type = compute.instance_types.get_default_instance_type()
         msg = ('No resource template was found in the request. '
@@ -162,7 +164,7 @@ def rebuild_vm(uid, image_href, context):
         raise AttributeError('Cannot find image for rebuild')
 
 
-def resize_vm(uid, flavor_name, context):
+def resize_vm(uid, flavor_id, context):
     """
     Resizes a VM up or down
 
@@ -170,13 +172,13 @@ def resize_vm(uid, flavor_name, context):
     http://wiki.openstack.org/HypervisorSupportMatrix
 
     uid -- id of the instance
-    flavor_name -- image reference.
+    flavor_id -- image reference.
     context -- the os context
     """
     instance = get_vm(uid, context)
     kwargs = {}
     try:
-        flavor = instance_types.get_instance_type_by_name(flavor_name)
+        flavor = instance_types.get_instance_type_by_flavor_id(flavor_id)
         COMPUTE_API.resize(context, instance, flavor_id=flavor['flavorid'],
                            **kwargs)
         ready = False

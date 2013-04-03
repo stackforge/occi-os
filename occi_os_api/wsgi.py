@@ -176,14 +176,14 @@ class OCCIApplication(occi_wsgi.Application, wsgi.Application):
                 continue
 
             os_template = os_mixins.OsTemplate(
-                                term=self._transformTerm(img['name']),
+                                term=img['id'],
                                 scheme=template_schema,
                                 os_id=img['id'],
                                 related=[infrastructure.OS_TEMPLATE],
                                 attributes=None,
                                 title='This is an OS ' + img['name'] + \
                                                             ' VM image',
-                                location='/' + quote(img['name']) + '/')
+                                location='/' + quote(img['id']) + '/')
 
             try:
                 self.registry.get_backend(os_template, extras)
@@ -199,13 +199,13 @@ class OCCIApplication(occi_wsgi.Application, wsgi.Application):
         template_schema = 'http://schemas.openstack.org/template/resource#'
         os_flavours = instance_types.get_all_types()
 
-        for itype in os_flavours:
+        for itype in os_flavours.values():
             resource_template = os_mixins.ResourceTemplate(
-                term=self._transformTerm(itype),
+                term=itype["flavorid"],
                 scheme=template_schema,
                 related=[infrastructure.RESOURCE_TEMPLATE],
-                title='This is an openstack ' + itype + ' flavor.',
-                location='/' + quote(itype) + '/')
+                title='This is an openstack ' + itype["name"] + ' flavor.',
+                location='/' + quote(itype["flavorid"]) + '/')
 
             try:
                 self.registry.get_backend(resource_template, extras)
@@ -236,19 +236,13 @@ class OCCIApplication(occi_wsgi.Application, wsgi.Application):
         for group in groups:
             if group['name'] not in excld_grps:
                 sec_mix = os_mixins.UserSecurityGroupMixin(
-                term=self._transformTerm(group['name']),
+                term=str(group["id"]),  # NOTE(aloga): group.id is a long
                 scheme=sec_grp,
                 related=[os_addon.SEC_GROUP],
                 attributes=None,
                 title=group['name'],
-                location='/security/' + quote(group['name']) + '/')
+                location='/security/' + quote(str(group['id'])) + '/')
                 try:
                     self.registry.get_backend(sec_mix, extras)
                 except AttributeError:
                     self.register_backend(sec_mix, MIXIN_BACKEND)
-
-    def _transformTerm(self, term):
-        """
-        Transform a term to be compliant with the spec.
-        """
-        return term.strip().replace(' ', '_').replace('(', '_').replace(')', '_').replace('.', '_').lower()

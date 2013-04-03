@@ -118,8 +118,8 @@ class ComputeBackend(KindBackend, ActionBackend):
 
         mixin = new.mixins[0]
         if isinstance(mixin, os_mixins.ResourceTemplate):
-            flavor_name = mixin.term
-            vm.resize_vm(uid, flavor_name, context)
+            flavor_id = mixin.term
+            vm.resize_vm(uid, flavor_id, context)
             old.attributes['occi.compute.state'] = 'inactive'
             # now update the mixin info
             old.mixins.append(mixin)
