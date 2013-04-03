@@ -369,12 +369,13 @@ def get_vnc(uid, context):
     uid -- id of the instance
     context -- the os context
     """
-    instance = get_vm(uid, context)
-    try:
-        console = COMPUTE_API.get_vnc_console(context, instance, 'novnc')
-    except exception.InstanceNotFound:
-        LOG.warn('Console info is not available atm!')
-        return None
+    console = None
+    if FLAGS.vnc_enabled:
+        instance = get_vm(uid, context)
+        try:
+            console = COMPUTE_API.get_vnc_console(context, instance, 'novnc')
+        except exception.InstanceNotFound:
+            LOG.warn('Console info is not available atm!')
     return console
 
 
