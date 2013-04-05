@@ -47,6 +47,9 @@ VOLUME_API = volume.API()
 
 LOG = logging.getLogger(__name__)
 
+# NOTE(aloga): we need to import the option
+FLAGS.import_opt('vnc_enabled', 'nova.vnc')
+
 
 def create_vm(entity, context):
     """
