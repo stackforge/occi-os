@@ -73,18 +73,16 @@ def remove_group(group_id, context):
         raise AttributeError(error)
 
 
-def retrieve_group(mixin_term, project_id, context):
+def retrieve_group(mixin_term, context):
     """
     Retrieve the security group associated with the security mixin.
 
     mixin_term -- The term of the mixin representing the group.
-    project_id -- The project id.
     context -- The os context.
     """
     try:
-        sec_group = db.security_group_get_by_name(context,
-                                                  project_id,
-                                                  mixin_term)
+        sec_group = db.security_group_get(context,
+                                          mixin_term)
     except Exception:
         # ensure that an OpenStack sec group matches the mixin
         # if not, create one.

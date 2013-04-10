@@ -108,7 +108,6 @@ class SecurityGroupBackend(backend.UserDefinedMixinBackend):
         """
         context = extras['nova_ctx']
         security_group = security.retrieve_group(category.term,
-                                                 extras['nova_ctx'].project_id,
                                                  extras['nova_ctx'])
         security.remove_group(security_group.id, context)
 
@@ -127,8 +126,7 @@ class SecurityRuleBackend(backend.KindBackend):
         sec_mixin = get_sec_mixin(entity)
         context = extras['nova_ctx']
         security_group = security.retrieve_group(sec_mixin.term,
-                                                 extras['nova_ctx']
-                                                 .project_id, context)
+                                                 context)
         sg_rule = make_sec_rule(entity, security_group['id'])
 
         if security_group_rule_exists(security_group, sg_rule):
