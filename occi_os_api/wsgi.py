@@ -199,13 +199,13 @@ class OCCIApplication(occi_wsgi.Application, wsgi.Application):
         template_schema = 'http://schemas.openstack.org/template/resource#'
         os_flavours = instance_types.get_all_types()
 
-        for itype in os_flavours:
+        for itype in os_flavours.keys():
             resource_template = os_mixins.ResourceTemplate(
                 term=itype,
                 scheme=template_schema,
                 related=[infrastructure.RESOURCE_TEMPLATE],
-                title='This is an openstack ' + itype + ' flavor.',
-                location='/' + quote(itype) + '/')
+                title='This is an openstack ' + itype["name"] + ' flavor.',
+                location='/' + quote(itype["flavorid"]) + '/')
 
             try:
                 self.registry.get_backend(resource_template, extras)
