@@ -35,9 +35,9 @@ setup(
          3rd party OCCI interface to OpenStack.
       ''',
     classifiers=[
-        'Programming Language :: Python'
+        'Programming Language :: Python',
         'Development Status :: 5 - Production/Stable',
-        'Topic :: Internet :: WWW/HTTP :: WSGI :: Application'
+        'Topic :: Internet :: WWW/HTTP :: WSGI :: Application',
         ],
     keywords='',
     author='Intel Performance Learning Solutions Ltd.',
