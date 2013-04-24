@@ -304,9 +304,9 @@ class OCCIRegistry(occi_registry.NonePersistentRegistry):
 
         os_id = instance['image_ref']
         image_id = storage.get_image(os_id, context)['id']
-        if os_tmp:
-            os_tmp = self.get_category('/' + image_id + '/', extras)
-        entity.mixins.append(os_tmp)
+        image_tmp = self.get_category('/' + image_id + '/', extras)
+        if image_tmp:
+            entity.mixins.append(image_tmp)
 
         # 3. network links & get links from cache!
         net_links = net.get_network_details(identifier, context)
