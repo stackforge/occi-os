@@ -1,3 +1,7 @@
+# Note:
+This documentation may not be current in places. There is also further documentation at the [openstack wiki](https://wiki.openstack.org/wiki/Occi)
+
+
 # OCCI and OpenStack: What can I do?
 This guide will explain what you can do with the current OCCI implementation for OpenStack
 
