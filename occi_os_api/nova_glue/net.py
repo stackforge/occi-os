@@ -74,12 +74,12 @@ def get_network_details(uid, context):
     return result
 
 
-def add_floating_ip(uid, context):
+def add_floating_ip(uid, pool_name, context):
     """
     Adds an ip to an VM instance.
 
     uid -- id of the VM.
-    attributes -- the call attributes (dict)
+    pool_name -- name of the pool
     context -- The os context.
     """
     vm_instance = vm.get_vm(uid, context)
@@ -92,7 +92,7 @@ def add_floating_ip(uid, context):
     if not fixed_ips:
         raise AttributeError('No fixed ips associated to instance')
 
-    float_address = NETWORK_API.allocate_floating_ip(context, None)
+    float_address = NETWORK_API.allocate_floating_ip(context, pool_name)
 
     try:
         address = fixed_ips[0]['address']

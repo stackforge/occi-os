@@ -79,8 +79,13 @@ class NetworkInterfaceBackend(backend.KindBackend):
         """
         if link.target.identifier == '/network/public':
             # public means floating IP in OS!
+            if 'org.openstack.network.floating.pool' in link.attributes:
+                pool = link.attributes['org.openstack.network.floating.pool']
+            else:
+                pool = None
             address = net.add_floating_ip(link.source.attributes[
                                                     'occi.core.id'],
+                                                pool,
                                                 extras['nova_ctx'])
             link.attributes['occi.networkinterface.interface'] = 'eth0'
             link.attributes['occi.networkinterface.mac'] = 'aa:bb:cc:dd:ee:ff'

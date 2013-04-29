@@ -40,12 +40,10 @@ SEC_RULE = core_model.Kind(
     _SEC_RULE_ATTRIBUTES,
     '/network/security/rule/')
 
-
 # Network security rule group
 SEC_GROUP = core_model.Mixin(
     'http://schemas.ogf.org/occi/infrastructure/security#',
     'group', attributes=None)
-
 
 # OS change adminstrative password action
 _OS_CHG_PWD_ATTRIBUTES = {'org.openstack.credentials.admin_pwd': '', }
@@ -53,7 +51,6 @@ OS_CHG_PWD = core_model.Action(
                 'http://schemas.openstack.org/instance/action#',
                  'chg_pwd', 'Changes Admin password.',
                  _OS_CHG_PWD_ATTRIBUTES)
-
 
 # OS create image from VM action
 _OS_CREATE_IMAGE_ATTRIBUTES = {'org.openstack.snapshot.image_name': '', }
@@ -63,8 +60,16 @@ OS_CREATE_IMAGE = core_model.Action(
                  _OS_CREATE_IMAGE_ATTRIBUTES)
 
 # A Mixin for OpenStack VMs
-_OS_VM_ATTRIBUTES = {'org.openstack.compute.console.vnc': 'immutable'}
+_OS_VM_ATTRIBUTES = {'org.openstack.compute.console.vnc': 'immutable',
+                     'org.openstack.compute.state': 'immutable'}
 OS_VM = core_model.Mixin(
     'http://schemas.openstack.org/instance/instance#',
     'os_vms', actions=[OS_CHG_PWD, OS_CREATE_IMAGE],
     attributes=_OS_VM_ATTRIBUTES)
+
+# OS Key pair extension
+_OS_KEY_PAIR_ATTRIBUTES = {'org.openstack.credentials.publickey.name': '',
+                       'org.openstack.credentials.publickey.data': '', }
+OS_KEY_PAIR_EXT = core_model.Mixin(
+    'http://schemas.openstack.org/instance/credentials#',
+    'public_key', attributes=_OS_KEY_PAIR_ATTRIBUTES)
