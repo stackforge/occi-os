@@ -37,6 +37,7 @@ from occi_os_api.nova_glue import vm
 from occi_os_api.nova_glue import storage
 from occi_os_api.nova_glue import net
 
+from nova.flags import FLAGS
 
 class OCCIRegistry(occi_registry.NonePersistentRegistry):
     """
@@ -55,6 +56,11 @@ class OCCIRegistry(occi_registry.NonePersistentRegistry):
             infrastructure.NETWORK, [infrastructure.IPNETWORK])
 
         self._setup_network()
+
+    def set_hostname(self, hostname):
+        if FLAGS.occi_custom_location_hostname:
+            hostname = FLAGS.occi_custom_location_hostname
+        super(OCCIRegistry, self).set_hostname(hostname)
 
     def get_extras(self, extras):
         """
@@ -291,14 +297,16 @@ class OCCIRegistry(occi_registry.NonePersistentRegistry):
         result.append(entity)
 
         # 2. os and res templates
-        flavor_name = instance['instance_type'].name
-        res_tmp = self.get_category('/' + flavor_name + '/', extras)
-        entity.mixins.append(res_tmp)
+        flavor_id = instance['instance_type'].flavorid
+        res_tmp = self.get_category('/' + flavor_id + '/', extras)
+        if res_tmp:
+            entity.mixins.append(res_tmp)
 
         os_id = instance['image_ref']
-        image_name = storage.get_image(os_id, context)['name']
-        os_tmp = self.get_category('/' + image_name + '/', extras)
-        entity.mixins.append(os_tmp)
+        image_id = storage.get_image(os_id, context)['id']
+        image_tmp = self.get_category('/' + image_id + '/', extras)
+        if image_tmp:
+            entity.mixins.append(image_tmp)
 
         # 3. network links & get links from cache!
         net_links = net.get_network_details(identifier, context)

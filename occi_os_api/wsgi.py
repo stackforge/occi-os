@@ -45,6 +45,8 @@ from occi import core_model
 from occi import wsgi as occi_wsgi
 from occi.extensions import infrastructure
 
+from urllib import quote
+
 LOG = logging.getLogger(__name__)
 
 #Setup options
@@ -125,6 +127,8 @@ class OCCIApplication(occi_wsgi.Application, wsgi.Application):
             openstack.OsComputeBackend())
         self.register_backend(os_addon.OS_CREATE_IMAGE,
             openstack.OsComputeBackend())
+        self.register_backend(os_addon.OS_KEY_PAIR_EXT,
+            openstack.OsComputeBackend())
         self.register_backend(os_addon.OS_CHG_PWD,
             openstack.OsComputeBackend())
 
@@ -172,14 +176,14 @@ class OCCIApplication(occi_wsgi.Application, wsgi.Application):
                 continue
 
             os_template = os_mixins.OsTemplate(
-                                term=img['name'],
+                                term=img['id'],
                                 scheme=template_schema,
                                 os_id=img['id'],
                                 related=[infrastructure.OS_TEMPLATE],
                                 attributes=None,
                                 title='This is an OS ' + img['name'] + \
                                                             ' VM image',
-                                location='/' + img['name'] + '/')
+                                location='/' + quote(img['id']) + '/')
 
             try:
                 self.registry.get_backend(os_template, extras)
@@ -195,13 +199,13 @@ class OCCIApplication(occi_wsgi.Application, wsgi.Application):
         template_schema = 'http://schemas.openstack.org/template/resource#'
         os_flavours = instance_types.get_all_types()
 
-        for itype in os_flavours:
+        for itype in os_flavours.values():
             resource_template = os_mixins.ResourceTemplate(
-                term=itype,
+                term=itype["flavorid"],
                 scheme=template_schema,
                 related=[infrastructure.RESOURCE_TEMPLATE],
-                title='This is an openstack ' + itype + ' flavor.',
-                location='/' + itype + '/')
+                title='This is an openstack ' + itype["name"] + ' flavor.',
+                location='/' + quote(itype["flavorid"]) + '/')
 
             try:
                 self.registry.get_backend(resource_template, extras)
@@ -232,12 +236,12 @@ class OCCIApplication(occi_wsgi.Application, wsgi.Application):
         for group in groups:
             if group['name'] not in excld_grps:
                 sec_mix = os_mixins.UserSecurityGroupMixin(
-                term=group['name'],
+                term=str(group["id"]),  # NOTE(aloga): group.id is a long
                 scheme=sec_grp,
                 related=[os_addon.SEC_GROUP],
                 attributes=None,
                 title=group['name'],
-                location='/security/' + group['name'] + '/')
+                location='/security/' + quote(str(group['id'])) + '/')
                 try:
                     self.registry.get_backend(sec_mix, extras)
                 except AttributeError:

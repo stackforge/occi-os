@@ -37,6 +37,7 @@ from occi.extensions import infrastructure
 
 from occi_os_api.extensions import os_mixins
 from occi_os_api.extensions import os_addon
+from occi_os_api.nova_glue import security
 
 import logging
 
@@ -46,6 +47,9 @@ COMPUTE_API = compute.API()
 VOLUME_API = volume.API()
 
 LOG = logging.getLogger(__name__)
+
+# NOTE(aloga): we need to import the option
+FLAGS.import_opt('vnc_enabled', 'nova.vnc')
 
 
 def create_vm(entity, context):
@@ -83,17 +87,23 @@ def create_vm(entity, context):
             resource_template = mixin
         elif isinstance(mixin, os_mixins.OsTemplate):
             os_template = mixin
+        elif mixin == os_addon.OS_KEY_PAIR_EXT:
+            attr = 'org.openstack.credentials.publickey.name'
+            key_name = entity.attributes[attr]
+            attr = 'org.openstack.credentials.publickey.data'
+            key_data = entity.attributes[attr]
         # Look for security group. If the group is non-existant, the
         # call to create will fail.
         if os_addon.SEC_GROUP in mixin.related:
-            sg_names.append(mixin.term)
+            secgroup = security.retrieve_group(mixin.term, context)
+            sg_names.append(secgroup["name"])
 
     if not os_template:
         raise AttributeError('Please provide a valid OS Template.')
 
     if resource_template:
         inst_type = compute.instance_types.\
-        get_instance_type_by_name(resource_template.term)
+            get_instance_type_by_flavor_id(resource_template.term)
     else:
         inst_type = compute.instance_types.get_default_instance_type()
         msg = ('No resource template was found in the request. '
@@ -154,7 +164,7 @@ def rebuild_vm(uid, image_href, context):
         raise AttributeError('Cannot find image for rebuild')
 
 
-def resize_vm(uid, flavor_name, context):
+def resize_vm(uid, flavor_id, context):
     """
     Resizes a VM up or down
 
@@ -162,13 +172,13 @@ def resize_vm(uid, flavor_name, context):
     http://wiki.openstack.org/HypervisorSupportMatrix
 
     uid -- id of the instance
-    flavor_name -- image reference.
+    flavor_id -- image reference.
     context -- the os context
     """
     instance = get_vm(uid, context)
     kwargs = {}
     try:
-        flavor = instance_types.get_instance_type_by_name(flavor_name)
+        flavor = instance_types.get_instance_type_by_flavor_id(flavor_id)
         COMPUTE_API.resize(context, instance, flavor_id=flavor['flavorid'],
                            **kwargs)
         ready = False
@@ -364,12 +374,13 @@ def get_vnc(uid, context):
     uid -- id of the instance
     context -- the os context
     """
-    instance = get_vm(uid, context)
-    try:
-        console = COMPUTE_API.get_vnc_console(context, instance, 'novnc')
-    except exception.InstanceNotFound:
-        LOG.warn('Console info is not available atm!')
-        return None
+    console = None
+    if FLAGS.vnc_enabled:
+        instance = get_vm(uid, context)
+        try:
+            console = COMPUTE_API.get_vnc_console(context, instance, 'novnc')
+        except exception.InstanceNotFound:
+            LOG.warn('Console info is not available atm!')
     return console
 
 
