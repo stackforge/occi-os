@@ -85,6 +85,15 @@ class OsComputeBackend(backend.MixinBackend, backend.ActionBackend):
             raise AttributeError('Not an applicable action.')
 
 
+class OsNetLinkBackend(backend.MixinBackend, backend.ActionBackend):
+    """
+    The OpenStack network link backend.
+    """
+
+    pass
+
+
+
 class SecurityGroupBackend(backend.UserDefinedMixinBackend):
     """
     Security Group backend.

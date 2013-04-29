@@ -132,7 +132,7 @@ class OCCIApplication(occi_wsgi.Application, wsgi.Application):
         self.register_backend(os_addon.OS_CHG_PWD,
             openstack.OsComputeBackend())
         self.register_backend(os_addon.OS_NET_LINK,
-            networkinterface_backend)
+            openstack.OsNetLinkBackend())
 
     def __call__(self, environ, response):
         """
