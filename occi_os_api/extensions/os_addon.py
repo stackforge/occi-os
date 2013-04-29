@@ -63,7 +63,7 @@ OS_CREATE_IMAGE = core_model.Action(
 _OS_VM_ATTRIBUTES = {'org.openstack.compute.console.vnc': 'immutable',
                      'org.openstack.compute.state': 'immutable'}
 OS_VM = core_model.Mixin(
-    'http://schemas.openstack.org/instance/instance#',
+    'http://schemas.openstack.org/compute/instance#',
     'os_vms', actions=[OS_CHG_PWD, OS_CREATE_IMAGE],
     attributes=_OS_VM_ATTRIBUTES)
 
@@ -73,3 +73,10 @@ _OS_KEY_PAIR_ATTRIBUTES = {'org.openstack.credentials.publickey.name': '',
 OS_KEY_PAIR_EXT = core_model.Mixin(
     'http://schemas.openstack.org/instance/credentials#',
     'public_key', attributes=_OS_KEY_PAIR_ATTRIBUTES)
+
+# A Mixin for OpenStack Network links
+_OS_NET_LINK_ATTRIBUTES = {'org.openstack.network.floating.pool': 'required'}
+OS_NET_LINK = core_model.Mixin(
+    'http://schemas.openstack.org/network/instance#',
+    'os_net_link', actions=[],
+    attributes=_OS_NET_LINK_ATTRIBUTES)

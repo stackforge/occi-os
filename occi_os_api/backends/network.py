@@ -26,6 +26,7 @@ Network resource backend.
 
 
 from occi import backend
+from extensions import os_addon
 from occi_os_api.nova_glue import net
 
 
@@ -79,7 +80,8 @@ class NetworkInterfaceBackend(backend.KindBackend):
         """
         if link.target.identifier == '/network/public':
             # public means floating IP in OS!
-            if 'org.openstack.network.floating.pool' in link.attributes:
+            # if the os_net_link mixin is avail. a pool must be provided:
+            if os_addon.OS_NET_LINK in link.mixins:
                 pool = link.attributes['org.openstack.network.floating.pool']
             else:
                 pool = None
