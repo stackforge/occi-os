@@ -26,7 +26,7 @@ Network resource backend.
 
 
 from occi import backend
-from extensions import os_addon
+from occi_os_api.extensions import os_addon
 from occi_os_api.nova_glue import net
 
 

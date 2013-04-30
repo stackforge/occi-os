@@ -90,8 +90,8 @@ class TestNetworkInterfaceBackend(unittest.TestCase):
         link = core_model.Link('foo', None, [], source, target)
 
         self.mox.StubOutWithMock(nova_glue.net, 'add_floating_ip')
-        nova_glue.net.add_floating_ip(mox.IsA(object),
-            mox.IsA(object)).AndReturn('10.0.0.1')
+        nova_glue.net.add_floating_ip(mox.IsA(object), mox.IsA(object),
+                                      mox.IsA(object)).AndReturn('10.0.0.1')
 
         self.mox.ReplayAll()
 
