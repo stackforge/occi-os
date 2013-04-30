@@ -176,16 +176,16 @@ class OCCIApplication(occi_wsgi.Application, wsgi.Application):
                 msg = 'Not registering kernel/RAM image.'
                 LOG.debug(msg)
                 continue
-
+            ctg_term = occify_terms(img['name'])
             os_template = os_mixins.OsTemplate(
-                                term=img['id'],
+                                term=ctg_term,
                                 scheme=template_schema,
                                 os_id=img['id'],
                                 related=[infrastructure.OS_TEMPLATE],
                                 attributes=None,
                                 title='This is an OS ' + img['name'] + \
                                                             ' VM image',
-                                location='/' + quote(img['id']) + '/')
+                                location='/' + ctg_term + '/')
 
             try:
                 self.registry.get_backend(os_template, extras)
@@ -202,12 +202,14 @@ class OCCIApplication(occi_wsgi.Application, wsgi.Application):
         os_flavours = instance_types.get_all_types()
 
         for itype in os_flavours.values():
+            ctg_term = occify_terms(itype['name'])
             resource_template = os_mixins.ResourceTemplate(
-                term=itype["flavorid"],
+                term=quote(ctg_term),
+                flavor_id=itype['flavorid'],
                 scheme=template_schema,
                 related=[infrastructure.RESOURCE_TEMPLATE],
-                title='This is an openstack ' + itype["name"] + ' flavor.',
-                location='/' + quote(itype["flavorid"]) + '/')
+                title='This is an openstack ' + itype['name'] + ' flavor.',
+                location='/' + quote(ctg_term) + '/')
 
             try:
                 self.registry.get_backend(resource_template, extras)
@@ -248,3 +250,10 @@ class OCCIApplication(occi_wsgi.Application, wsgi.Application):
                     self.registry.get_backend(sec_mix, extras)
                 except AttributeError:
                     self.register_backend(sec_mix, MIXIN_BACKEND)
+
+def occify_terms(term_name):
+    '''
+    Occifies a term_name so that it is compliant with GFD 185.
+    '''
+    term = term_name.strip().replace(' ', '_').replace('.','-').lower()
+    return term

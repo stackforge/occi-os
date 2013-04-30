@@ -41,7 +41,14 @@ class ResourceTemplate(core_model.Mixin):
     """
     Here to make identification of template type easier in backends.
     """
-    pass
+
+    def __init__(self, scheme, term, flavor_id=None, related=None,
+                 actions=None, title='',
+                 attributes=None, location=None):
+        super(ResourceTemplate, self).__init__(scheme, term, related,
+                                               actions, title, attributes,
+                                               location)
+        self.res_id = flavor_id
 
 
 class UserSecurityGroupMixin(core_model.Mixin):

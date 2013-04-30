@@ -103,7 +103,7 @@ def create_vm(entity, context):
 
     if resource_template:
         inst_type = compute.instance_types.\
-            get_instance_type_by_flavor_id(resource_template.term)
+            get_instance_type_by_flavor_id(resource_template.res_id)
     else:
         inst_type = compute.instance_types.get_default_instance_type()
         msg = ('No resource template was found in the request. '

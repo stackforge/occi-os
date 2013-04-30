@@ -188,9 +188,9 @@ class SystemTest(unittest.TestCase):
         get_qi_listing(self.token)
 
         # create VM
-        cats = ['m1.tiny; scheme="http://schemas.openstack'
+        cats = ['m1-tiny; scheme="http://schemas.openstack'
                 '.org/template/resource#"',
-                'cirros-0.3.0-x86_64-uec; scheme="http://schemas.openstack'
+                'cirros-0-3-0-x86_64-uec; scheme="http://schemas.openstack'
                 '.org/template/os#"',
                 'compute; scheme="http://schemas.ogf'
                 '.org/occi/infrastructure#"']
@@ -261,10 +261,11 @@ class SystemTest(unittest.TestCase):
                  'occi.network.security.to="22"',
                  'occi.network.security.from="22"',
                  'occi.network.security.range="0.0.0.0/0"']
+        print cats
         sec_rule_loc = create_node(self.token, cats, attrs)
 
         # list
-        LOG.debug(list_nodes(self.token, '/mygroups/'))
+        LOG.error(list_nodes(self.token, '/mygroups/'))
         LOG.debug(do_request('GET', sec_rule_loc, heads))
 
         # FIXME: add VM to sec group - see #22
@@ -272,9 +273,9 @@ class SystemTest(unittest.TestCase):
         #print do_request('POST', '/mygroups/', heads)
 
         # create new VM
-        cats = ['m1.tiny; scheme="http://schemas.openstack'
+        cats = ['m1-tiny; scheme="http://schemas.openstack'
                 '.org/template/resource#"',
-                'cirros-0.3.0-x86_64-uec; scheme="http://schemas.openstack'
+                'cirros-0-3-0-x86_64-uec; scheme="http://schemas.openstack'
                 '.org/template/os#"',
                 name + '; scheme="http://www.mystuff.org/sec#"',
                 'compute; scheme="http://schemas.ogf'
@@ -330,9 +331,9 @@ class SystemTest(unittest.TestCase):
         """
 
         # create new VM
-        cats = ['m1.tiny; scheme="http://schemas.openstack'
+        cats = ['m1-tiny; scheme="http://schemas.openstack'
             '.org/template/resource#"',
-            'cirros-0.3.0-x86_64-uec; scheme="http://schemas.openstack'
+            'cirros-0-3-0-x86_64-uec; scheme="http://schemas.openstack'
             '.org/template/os#"',
             'compute; scheme="http://schemas.ogf.org/occi/infrastructure#"']
         vm_location = create_node(self.token, cats)
@@ -400,7 +401,7 @@ class SystemTest(unittest.TestCase):
         # create new VM
         cats = ['itsy; scheme="http://schemas.openstack'
             '.org/template/resource#"',
-            'cirros-0.3.0-x86_64-uec; scheme="http://schemas.openstack'
+            'cirros-0-3-0-x86_64-uec; scheme="http://schemas.openstack'
             '.org/template/os#"',
             'compute; scheme="http://schemas.ogf.org/occi/infrastructure#"']
         vm_location = create_node(self.token, cats)
