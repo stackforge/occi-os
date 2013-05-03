@@ -81,7 +81,9 @@ class NetworkInterfaceBackend(backend.KindBackend):
         if link.target.identifier == '/network/public':
             # public means floating IP in OS!
             # if the os_net_link mixin is avail. a pool must be provided:
-            if os_addon.OS_NET_LINK in link.mixins:
+            if not 'org.openstack.network.floating.pool' in link.attributes and os_addon.OS_NET_LINK in link.mixins:
+                raise AttributeError('Please specify the pool name when using this mixin!')
+            elif os_addon.OS_NET_LINK in link.mixins:
                 pool = link.attributes['org.openstack.network.floating.pool']
             else:
                 pool = None

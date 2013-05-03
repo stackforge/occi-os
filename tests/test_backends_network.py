@@ -28,6 +28,7 @@ from occi import core_model
 
 from occi_os_api import nova_glue
 from occi_os_api.backends import network
+from occi_os_api.extensions import os_addon
 
 
 class TestNetworkInterfaceBackend(unittest.TestCase):
@@ -69,6 +70,16 @@ class TestNetworkInterfaceBackend(unittest.TestCase):
 
         self.mox.VerifyAll()
 
+        # should have pool name in attribute...
+        target.identifier = '/network/public'
+        link = core_model.Link('foo', None, [os_addon.OS_NET_LINK], source, target)
+
+        self.mox.ReplayAll()
+        self.assertRaises(AttributeError, self.backend.create, link,
+            self.sec_obj)
+
+        self.mox.VerifyAll()
+
     def test_update_for_failure(self):
         """
         No updates allowed!
@@ -87,14 +98,15 @@ class TestNetworkInterfaceBackend(unittest.TestCase):
         target = mox.MockObject(core_model.Resource)
         target.identifier = '/network/public'
 
-        link = core_model.Link('foo', None, [], source, target)
+        link = core_model.Link('foo', None, [os_addon.OS_NET_LINK], source,
+                               target)
+        link.attributes = {'org.openstack.network.floating.pool':'nova'}
 
         self.mox.StubOutWithMock(nova_glue.net, 'add_floating_ip')
-        nova_glue.net.add_floating_ip(mox.IsA(object), mox.IsA(object),
+        nova_glue.net.add_floating_ip(mox.IsA(object), mox.IsA(str),
                                       mox.IsA(object)).AndReturn('10.0.0.1')
 
         self.mox.ReplayAll()
-
         self.backend.create(link, self.sec_obj)
 
         # verify all attrs and mixins!
@@ -109,6 +121,15 @@ class TestNetworkInterfaceBackend(unittest.TestCase):
         # self.assertIn(infrastructure.NETWORKINTERFACE, link.mixins)
 
         self.mox.VerifyAll()
+
+        # test without pool name...
+        self.mox.UnsetStubs()
+        self.mox.StubOutWithMock(nova_glue.net, 'add_floating_ip')
+        link = core_model.Link('foo', None, [], source, target)
+        nova_glue.net.add_floating_ip(mox.IsA(object), mox.IsA(str),
+                                      mox.IsA(object)).AndReturn('10.0.0.1')
+
+        self.backend.create(link, self.sec_obj)
 
     def test_delete_for_sanity(self):
         """
