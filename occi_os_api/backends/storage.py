@@ -49,8 +49,9 @@ class StorageBackend(backend.KindBackend, backend.ActionBackend):
         if 'occi.storage.size' not in entity.attributes:
             raise AttributeError('size attribute not found!')
 
-        new_volume = storage.create_storage(entity.attributes['occi.storage' \
-                                                          '.size'], context)
+        new_volume = storage.create_storage(entity.attributes['occi.storage'
+                                                              '.size'],
+                                            context)
         vol_id = new_volume['id']
 
         # Work around problem that instance is lazy-loaded...
@@ -66,7 +67,7 @@ class StorageBackend(backend.KindBackend, backend.ActionBackend):
             entity.attributes['occi.storage.state'] = 'active'
 
         entity.actions = [infrastructure.OFFLINE, infrastructure.BACKUP,
-                            infrastructure.SNAPSHOT, infrastructure.RESIZE]
+                          infrastructure.SNAPSHOT, infrastructure.RESIZE]
 
     def retrieve(self, entity, extras):
         """
@@ -98,13 +99,13 @@ class StorageBackend(backend.KindBackend, backend.ActionBackend):
         if len(new.attributes) > 0:
             # support only title and summary changes now.
             if 'occi.core.title' in new.attributes and \
-                len(new.attributes['occi.core.title']) > 0:
+                    len(new.attributes['occi.core.title']) > 0:
                 old.attributes['occi.core.title'] = \
-                new.attributes['occi.core.title']
-            if 'occi.core.title' in new.attributes and\
+                    new.attributes['occi.core.title']
+            if 'occi.core.title' in new.attributes and \
                len(new.attributes['occi.core.summary']) > 0:
                 old.attributes['occi.core.summary'] = \
-                new.attributes['occi.core.summary']
+                    new.attributes['occi.core.summary']
 
     def delete(self, entity, extras):
         """
@@ -122,7 +123,7 @@ class StorageBackend(backend.KindBackend, backend.ActionBackend):
         if action not in entity.actions:
             raise AttributeError("This action is currently no applicable.")
         elif action in [infrastructure.ONLINE, infrastructure.OFFLINE,
-                      infrastructure.BACKUP, infrastructure.RESIZE]:
+                        infrastructure.BACKUP, infrastructure.RESIZE]:
             LOG.warn('The operations online, offline, backup and resize are '
                      'currently not supported!')
         elif action == infrastructure.SNAPSHOT:
@@ -155,7 +156,7 @@ class StorageLinkBackend(backend.KindBackend):
 
         link.attributes['occi.core.id'] = str(uuid.uuid4())
         link.attributes['occi.storagelink.deviceid'] = \
-                                link.attributes['occi.storagelink.deviceid']
+            link.attributes['occi.storagelink.deviceid']
         link.attributes['occi.storagelink.mountpoint'] = ''
         link.attributes['occi.storagelink.state'] = 'active'
 

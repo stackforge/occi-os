@@ -68,15 +68,15 @@ class TestComputeBackend(unittest.TestCase):
         res = core_model.Resource('/foo/bar', infrastructure.COMPUTE, [])
 
         self.assertRaises(AttributeError, self.backend.create, res,
-            self.sec_obj)
+                          self.sec_obj)
 
         # provide immutable attr
         res = core_model.Resource('/foo/bar', infrastructure.COMPUTE,
-            [self.os_template])
+                                  [self.os_template])
         res.attributes = {'occi.compute.cores': 2}
 
         self.assertRaises(AttributeError, self.backend.create, res,
-            self.sec_obj)
+                          self.sec_obj)
 
     def test_update_for_failure(self):
         """
@@ -88,13 +88,14 @@ class TestComputeBackend(unittest.TestCase):
         res2 = core_model.Resource('/foo/bar', infrastructure.COMPUTE, [])
 
         self.assertRaises(AttributeError, self.backend.update, res1, res2,
-            self.sec_obj)
+                          self.sec_obj)
 
         res2 = core_model.Resource('/foo/bar', infrastructure.COMPUTE,
-            [core_model.Category('http://foo.com', 'bar', '', '', '')])
+                                   [core_model.Category('http://foo.com',
+                                                        'bar', '', '', '')])
 
         self.assertRaises(AttributeError, self.backend.update, res1, res2,
-            self.sec_obj)
+                          self.sec_obj)
 
     def test_action_for_failure(self):
         """
@@ -110,7 +111,7 @@ class TestComputeBackend(unittest.TestCase):
             })
         self.mox.ReplayAll()
         self.assertRaises(AttributeError, self.backend.action, res1,
-            infrastructure.STOP, {}, self.sec_obj)
+                          infrastructure.STOP, {}, self.sec_obj)
         self.mox.VerifyAll()
 
         # missing method!
@@ -122,7 +123,7 @@ class TestComputeBackend(unittest.TestCase):
             })
         self.mox.ReplayAll()
         self.assertRaises(AttributeError, self.backend.action, res1,
-                            infrastructure.RESTART, {}, self.sec_obj)
+                          infrastructure.RESTART, {}, self.sec_obj)
         self.mox.VerifyAll()
 
     # Test for Sanity
@@ -132,7 +133,7 @@ class TestComputeBackend(unittest.TestCase):
         Simulate a create call!
         """
         res = core_model.Resource('/foo/bar', infrastructure.COMPUTE,
-            [self.os_template])
+                                  [self.os_template])
 
         self.mox.StubOutWithMock(nova_glue.vm, 'create_vm')
         nova_glue.vm.create_vm(mox.IsA(object), mox.IsA(object)).AndReturn(
@@ -144,8 +145,8 @@ class TestComputeBackend(unittest.TestCase):
             })
         self.mox.StubOutWithMock(nova_glue.storage, 'get_image_architecture')
         nova_glue.storage.get_image_architecture(mox.IsA(object),
-            mox.IsA(object)).AndReturn(
-            'foo')
+                                                 mox.IsA(object)).\
+            AndReturn('foo')
 
         self.mox.ReplayAll()
 
@@ -171,14 +172,15 @@ class TestComputeBackend(unittest.TestCase):
         Simulate a retrieve call!
         """
         res = core_model.Resource('/foo/bar', infrastructure.COMPUTE,
-            [self.os_template])
+                                  [self.os_template])
         res.attributes = {'occi.core.id': 'bar'}
 
         self.mox.StubOutWithMock(nova_glue.vm, 'get_occi_state')
         nova_glue.vm.get_occi_state(mox.IsA(object),
-            mox.IsA(object)).AndReturn(('active', [infrastructure.STOP,
-                                                   infrastructure.SUSPEND,
-                                                   infrastructure.RESTART]))
+                                    mox.IsA(object)).\
+            AndReturn(('active', [infrastructure.STOP,
+                                  infrastructure.SUSPEND,
+                                  infrastructure.RESTART]))
         self.mox.StubOutWithMock(nova_glue.vm, 'get_vm')
         nova_glue.vm.get_vm(mox.IsA(object), mox.IsA(object)).AndReturn(
             {
@@ -188,8 +190,8 @@ class TestComputeBackend(unittest.TestCase):
             })
         self.mox.StubOutWithMock(nova_glue.storage, 'get_image_architecture')
         nova_glue.storage.get_image_architecture(mox.IsA(object),
-            mox.IsA(object)).AndReturn(
-            'foo')
+                                                 mox.IsA(object)).\
+            AndReturn('foo')
         self.mox.ReplayAll()
 
         self.backend.retrieve(res, self.sec_obj)
@@ -216,16 +218,16 @@ class TestComputeBackend(unittest.TestCase):
         Simulate a update call!
         """
         res1 = core_model.Resource('/foo/bar', infrastructure.COMPUTE,
-            [self.os_template])
+                                   [self.os_template])
         res1.attributes = {'occi.core.id': 'bar'}
 
         # case 1 - rebuild VM with different OS
         res2 = core_model.Resource('/foo/bar', infrastructure.COMPUTE,
-            [self.os_template2])
+                                   [self.os_template2])
 
         self.mox.StubOutWithMock(nova_glue.vm, 'rebuild_vm')
         nova_glue.vm.rebuild_vm(mox.IsA(object), mox.IsA(object),
-            mox.IsA(object))
+                                mox.IsA(object))
         self.mox.ReplayAll()
         self.backend.update(res1, res2, self.sec_obj)
 
@@ -235,11 +237,11 @@ class TestComputeBackend(unittest.TestCase):
 
         # case 2 - resize the VM
         res2 = core_model.Resource('/foo/bar', infrastructure.COMPUTE,
-            [self.res_template2])
+                                   [self.res_template2])
 
         self.mox.StubOutWithMock(nova_glue.vm, 'resize_vm')
         nova_glue.vm.resize_vm(mox.IsA(object), mox.IsA(object),
-            mox.IsA(object))
+                               mox.IsA(object))
         self.mox.ReplayAll()
         self.backend.update(res1, res2, self.sec_obj)
 
@@ -258,7 +260,7 @@ class TestComputeBackend(unittest.TestCase):
         Simulate a delete call.
         """
         res = core_model.Resource('/foo/bar', infrastructure.COMPUTE,
-            [self.os_template])
+                                  [self.os_template])
         res.attributes = {'occi.core.id': 'bar'}
 
         self.mox.StubOutWithMock(nova_glue.vm, 'delete_vm')
@@ -304,7 +306,7 @@ class TestComputeBackend(unittest.TestCase):
         self.mox.UnsetStubs()
         self.mox.StubOutWithMock(nova_glue.vm, 'restart_vm')
         nova_glue.vm.restart_vm(mox.IsA(object), mox.IsA(str),
-            mox.IsA(object))
+                                mox.IsA(object))
         self.mox.StubOutWithMock(nova_glue.vm, 'get_vm')
         nova_glue.vm.get_vm(mox.IsA(object), mox.IsA(object)).AndReturn(
             {
@@ -312,8 +314,7 @@ class TestComputeBackend(unittest.TestCase):
             })
         self.mox.ReplayAll()
         self.backend.action(res1, infrastructure.RESTART,
-            {'method': 'graceful'},
-            self.sec_obj)
+                            {'method': 'graceful'}, self.sec_obj)
         self.mox.VerifyAll()
 
         # suspend

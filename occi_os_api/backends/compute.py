@@ -72,8 +72,8 @@ class ComputeBackend(KindBackend, ActionBackend):
 
         # set valid actions
         entity.actions = [infrastructure.STOP,
-                         infrastructure.SUSPEND,
-                         infrastructure.RESTART]
+                          infrastructure.SUSPEND,
+                          infrastructure.RESTART]
 
         # Tell the world that is is an VM in OpenStack...
         entity.mixins.append(os_addon.OS_VM)
@@ -96,7 +96,7 @@ class ComputeBackend(KindBackend, ActionBackend):
         # set up to date attributes
         entity.attributes['occi.compute.hostname'] = instance['hostname']
         entity.attributes['occi.compute.architecture'] =\
-        storage.get_image_architecture(uid, extras['nova_ctx'])
+            storage.get_image_architecture(uid, extras['nova_ctx'])
         entity.attributes['occi.compute.cores'] = str(instance['vcpus'])
         entity.attributes['occi.compute.speed'] = str(0.0)  # N/A in instance
         value = str(float(instance['memory_mb']) / 1024)

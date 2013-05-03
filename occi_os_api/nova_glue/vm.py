@@ -260,8 +260,8 @@ def start_vm(uid, context):
     try:
         COMPUTE_API.resume(context, instance)
     except Exception as error:
-        raise exceptions.HTTPError(500, 'Error while starting VM: ' + str
-            (error))
+        raise exceptions.HTTPError(500, 'Error while starting VM: ' +
+                                        str(error))
 
 
 def stop_vm(uid, context):
@@ -281,8 +281,8 @@ def stop_vm(uid, context):
         # self.compute_api.stop(context, instance)
         COMPUTE_API.suspend(context, instance)
     except Exception as error:
-        raise exceptions.HTTPError(500, 'Error while stopping VM: ' + str
-            (error))
+        raise exceptions.HTTPError(500, 'Error while stopping VM: ' +
+                                        str(error))
 
 
 def restart_vm(uid, method, context):

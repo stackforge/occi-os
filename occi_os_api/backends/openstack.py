@@ -44,7 +44,7 @@ class OsComputeBackend(backend.MixinBackend, backend.ActionBackend):
 
         # set additional actions
         if 'occi.compute.state' in entity.attributes and entity.attributes[
-                  'occi.compute.state'] == 'active':
+                'occi.compute.state'] == 'active':
             entity.actions.append(os_addon.OS_CREATE_IMAGE)
             entity.actions.append(os_addon.OS_CHG_PWD)
 
@@ -52,7 +52,7 @@ class OsComputeBackend(backend.MixinBackend, backend.ActionBackend):
         console = vm.get_vnc(uid, context)
         if console:
             entity.attributes['org.openstack.compute.console.vnc'] =\
-            console['url']
+                console['url']
         else:
             entity.attributes['org.openstack.compute.console.vnc'] = 'N/A'
 
@@ -93,7 +93,6 @@ class OsNetLinkBackend(backend.MixinBackend, backend.ActionBackend):
     pass
 
 
-
 class SecurityGroupBackend(backend.UserDefinedMixinBackend):
     """
     Security Group backend.
@@ -104,8 +103,8 @@ class SecurityGroupBackend(backend.UserDefinedMixinBackend):
         Creates the security group as specified in the request.
         """
         #do not recreate default openstack security groups
-        if (category.scheme ==
-            'http://schemas.openstack.org/infrastructure/security/group#'):
+        if category.scheme == \
+                'http://schemas.openstack.org/infrastructure/security/group#':
             return
 
         context = extras['nova_ctx']
@@ -158,7 +157,7 @@ class SecurityRuleBackend(backend.KindBackend):
         try:
             context = extras['nova_ctx']
             rule = security.retrieve_rule(entity.attributes['occi.core.id'],
-                                     context)
+                                          context)
 
             security.remove_rule(rule, context)
         except Exception as error:
@@ -174,7 +173,7 @@ def make_sec_rule(entity, sec_grp_id):
                'parent_group_id': sec_grp_id}
     entity.attributes['occi.core.id'] = str(sg_rule['id'])
     prot = \
-    entity.attributes['occi.network.security.protocol'].lower().strip()
+        entity.attributes['occi.network.security.protocol'].lower().strip()
     if prot in ('tcp', 'udp', 'icmp'):
         sg_rule['protocol'] = prot
     else:

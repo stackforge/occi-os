@@ -81,16 +81,18 @@ class NetworkInterfaceBackend(backend.KindBackend):
         if link.target.identifier == '/network/public':
             # public means floating IP in OS!
             # if the os_net_link mixin is avail. a pool must be provided:
-            if not 'org.openstack.network.floating.pool' in link.attributes and os_addon.OS_NET_LINK in link.mixins:
-                raise AttributeError('Please specify the pool name when using this mixin!')
+            if not 'org.openstack.network.floating.pool' in link.attributes\
+                    and os_addon.OS_NET_LINK in link.mixins:
+                raise AttributeError('Please specify the pool name when using'
+                                     ' this mixin!')
             elif os_addon.OS_NET_LINK in link.mixins:
                 pool = link.attributes['org.openstack.network.floating.pool']
             else:
                 pool = None
-            address = net.add_floating_ip(link.source.attributes[
-                                                    'occi.core.id'],
-                                                pool,
-                                                extras['nova_ctx'])
+            address = net.add_floating_ip(link.source.attributes['occi.'
+                                                                 'core.id'],
+                                          pool,
+                                          extras['nova_ctx'])
             link.attributes['occi.networkinterface.interface'] = 'eth0'
             link.attributes['occi.networkinterface.mac'] = 'aa:bb:cc:dd:ee:ff'
             link.attributes['occi.networkinterface.state'] = 'active'
@@ -113,5 +115,6 @@ class NetworkInterfaceBackend(backend.KindBackend):
         if link.target.identifier == '/network/public':
             # public means floating IP in OS!
             net.remove_floating_ip(link.source.attributes['occi.core.id'],
-                link.attributes['occi.networkinterface.address'],
-                extras['nova_ctx'])
+                                   link.attributes['occi.networkinterface.'
+                                                   'address'],
+                                   extras['nova_ctx'])

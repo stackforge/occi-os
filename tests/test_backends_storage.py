@@ -62,22 +62,24 @@ class TestStorageBackend(unittest.TestCase):
         res = mox.MockObject(core_model.Resource)
         res.attributes = {}
         self.assertRaises(AttributeError, self.backend.create, res,
-            self.sec_obj)
+                          self.sec_obj)
 
         # error in volume creation
         res.attributes = {'occi.storage.size': '1'}
 
         self.mox.StubOutWithMock(nova_glue.storage, 'create_storage')
         nova_glue.storage.create_storage(mox.IsA(object),
-            mox.IsA(object)).AndReturn({'id': '1'})
+                                         mox.IsA(object)).\
+            AndReturn({'id': '1'})
         self.mox.StubOutWithMock(nova_glue.storage, 'get_storage')
         nova_glue.storage.get_storage(mox.IsA(object),
-            mox.IsA(object)).AndReturn({'status': 'error'})
+                                      mox.IsA(object)).\
+            AndReturn({'status': 'error'})
 
         self.mox.ReplayAll()
 
         self.assertRaises(exceptions.HTTPError, self.backend.create, res,
-            self.sec_obj)
+                          self.sec_obj)
 
         self.mox.VerifyAll()
 
@@ -90,7 +92,7 @@ class TestStorageBackend(unittest.TestCase):
 
         # snapshot
         self.assertRaises(AttributeError, self.backend.action, res,
-            infrastructure.SNAPSHOT, {}, self.sec_obj)
+                          infrastructure.SNAPSHOT, {}, self.sec_obj)
 
     # Test for sanity
 
@@ -103,10 +105,12 @@ class TestStorageBackend(unittest.TestCase):
 
         self.mox.StubOutWithMock(nova_glue.storage, 'create_storage')
         nova_glue.storage.create_storage(mox.IsA(object),
-            mox.IsA(object)).AndReturn({'id': '1'})
+                                         mox.IsA(object)).\
+            AndReturn({'id': '1'})
         self.mox.StubOutWithMock(nova_glue.storage, 'get_storage')
         nova_glue.storage.get_storage(mox.IsA(object),
-            mox.IsA(object)).AndReturn({'status': 'available'})
+                                      mox.IsA(object)).\
+            AndReturn({'status': 'available'})
 
         self.mox.ReplayAll()
 
@@ -129,7 +133,8 @@ class TestStorageBackend(unittest.TestCase):
 
         self.mox.StubOutWithMock(nova_glue.storage, 'get_storage')
         nova_glue.storage.get_storage(mox.IsA(object),
-            mox.IsA(object)).AndReturn({'status': 'available', 'size': '1'})
+                                      mox.IsA(object)).\
+            AndReturn({'status': 'available', 'size': '1'})
 
         self.mox.ReplayAll()
 
@@ -139,14 +144,15 @@ class TestStorageBackend(unittest.TestCase):
         self.assertEqual(res.attributes['occi.storage.state'], 'online')
         self.assertListEqual([infrastructure.OFFLINE, infrastructure.BACKUP,
                               infrastructure.SNAPSHOT, infrastructure.RESIZE],
-            res.actions)
+                             res.actions)
 
         self.mox.VerifyAll()
 
         self.mox.UnsetStubs()
         self.mox.StubOutWithMock(nova_glue.storage, 'get_storage')
         nova_glue.storage.get_storage(mox.IsA(object),
-            mox.IsA(object)).AndReturn({'status': 'bla', 'size': '1'})
+                                      mox.IsA(object)).\
+            AndReturn({'status': 'bla', 'size': '1'})
 
         self.mox.ReplayAll()
 
@@ -164,8 +170,8 @@ class TestStorageBackend(unittest.TestCase):
         res1 = mox.MockObject(core_model.Resource)
         res1.attributes = {}
         res2 = mox.MockObject(core_model.Resource)
-        res2.attributes = {'occi.core.title': 'foo', 'occi.core.summary':
-            'bar'}
+        res2.attributes = {'occi.core.title': 'foo',
+                           'occi.core.summary': 'bar'}
 
         self.mox.ReplayAll()
 
@@ -186,7 +192,7 @@ class TestStorageBackend(unittest.TestCase):
 
         self.mox.StubOutWithMock(nova_glue.storage, 'delete_storage_instance')
         nova_glue.storage.delete_storage_instance(mox.IsA(object),
-            mox.IsA(object))
+                                                  mox.IsA(object))
 
         self.mox.ReplayAll()
 
@@ -205,9 +211,11 @@ class TestStorageBackend(unittest.TestCase):
 
         # snapshot
         self.mox.StubOutWithMock(nova_glue.storage,
-            'snapshot_storage_instance')
+                                 'snapshot_storage_instance')
         nova_glue.storage.snapshot_storage_instance(mox.IsA(object),
-            mox.IsA(object), mox.IsA(object), mox.IsA(object))
+                                                    mox.IsA(object),
+                                                    mox.IsA(object),
+                                                    mox.IsA(object))
         self.mox.ReplayAll()
         self.backend.action(res, infrastructure.SNAPSHOT, {}, self.sec_obj)
         self.mox.VerifyAll()
@@ -253,7 +261,8 @@ class TestStorageLinkBackend(unittest.TestCase):
 
         self.mox.StubOutWithMock(nova_glue.vm, 'attach_volume')
         nova_glue.vm.attach_volume(mox.IsA(object), mox.IsA(object),
-            mox.IsA(object), mox.IsA(object)).AndReturn({})
+                                   mox.IsA(object), mox.IsA(object)).\
+            AndReturn({})
 
         self.mox.ReplayAll()
 
@@ -261,7 +270,7 @@ class TestStorageLinkBackend(unittest.TestCase):
 
         # verify all attrs.
         self.assertEqual(link.attributes['occi.storagelink.deviceid'],
-            '/dev/sda')
+                         '/dev/sda')
         self.assertIn('occi.storagelink.mountpoint', link.attributes)
         self.assertEqual(link.attributes['occi.storagelink.state'], 'active')
 

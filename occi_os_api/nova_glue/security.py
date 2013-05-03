@@ -115,7 +115,7 @@ def remove_rule(rule, context):
     try:
         db.security_group_rule_destroy(context, rule['id'])
         SEC_HANDLER.trigger_security_group_rule_destroy_refresh(context,
-            [rule['id']])
+                                                                [rule['id']])
     except Exception as err:
         raise AttributeError('Unable to remove rule: ' + str(err))
 

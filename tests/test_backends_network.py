@@ -66,17 +66,18 @@ class TestNetworkInterfaceBackend(unittest.TestCase):
         self.mox.ReplayAll()
 
         self.assertRaises(AttributeError, self.backend.create, link,
-            self.sec_obj)
+                          self.sec_obj)
 
         self.mox.VerifyAll()
 
         # should have pool name in attribute...
         target.identifier = '/network/public'
-        link = core_model.Link('foo', None, [os_addon.OS_NET_LINK], source, target)
+        link = core_model.Link('foo', None, [os_addon.OS_NET_LINK], source,
+                               target)
 
         self.mox.ReplayAll()
         self.assertRaises(AttributeError, self.backend.create, link,
-            self.sec_obj)
+                          self.sec_obj)
 
         self.mox.VerifyAll()
 
@@ -85,7 +86,7 @@ class TestNetworkInterfaceBackend(unittest.TestCase):
         No updates allowed!
         """
         self.assertRaises(AttributeError, self.backend.update, None, None,
-            None)
+                          None)
 
     # Test for sanity!
 
@@ -100,10 +101,10 @@ class TestNetworkInterfaceBackend(unittest.TestCase):
 
         link = core_model.Link('foo', None, [os_addon.OS_NET_LINK], source,
                                target)
-        link.attributes = {'org.openstack.network.floating.pool':'nova'}
+        link.attributes = {'org.openstack.network.floating.pool': 'nova'}
 
         self.mox.StubOutWithMock(nova_glue.net, 'add_floating_ip')
-        nova_glue.net.add_floating_ip(mox.IsA(object), mox.IsA(str),
+        nova_glue.net.add_floating_ip(mox.IsA(str), mox.IsA(str),
                                       mox.IsA(object)).AndReturn('10.0.0.1')
 
         self.mox.ReplayAll()
@@ -120,16 +121,18 @@ class TestNetworkInterfaceBackend(unittest.TestCase):
         # self.assertIn(infrastructure.IPNETWORKINTERFACE, link.mixins)
         # self.assertIn(infrastructure.NETWORKINTERFACE, link.mixins)
 
-        self.mox.VerifyAll()
-
         # test without pool name...
         self.mox.UnsetStubs()
-        self.mox.StubOutWithMock(nova_glue.net, 'add_floating_ip')
         link = core_model.Link('foo', None, [], source, target)
-        nova_glue.net.add_floating_ip(mox.IsA(object), mox.IsA(str),
-                                      mox.IsA(object)).AndReturn('10.0.0.1')
 
+        self.mox.StubOutWithMock(nova_glue.net, 'add_floating_ip')
+
+        nova_glue.net.add_floating_ip(mox.IsA(str), mox.IsA(None),
+                                      mox.IsA(object)).AndReturn('10.0.0.2')
+
+        self.mox.ReplayAll()
         self.backend.create(link, self.sec_obj)
+        self.mox.VerifyAll()
 
     def test_delete_for_sanity(self):
         """
@@ -145,7 +148,7 @@ class TestNetworkInterfaceBackend(unittest.TestCase):
 
         self.mox.StubOutWithMock(nova_glue.net, 'remove_floating_ip')
         nova_glue.net.remove_floating_ip(mox.IsA(object), mox.IsA(object),
-            mox.IsA(object))
+                                         mox.IsA(object))
 
         self.mox.ReplayAll()
 
@@ -176,7 +179,7 @@ class TestNetworkBackend(unittest.TestCase):
         Expecting an error!
         """
         self.assertRaises(AttributeError, self.backend.action, None,
-            None, None, None)
+                          None, None, None)
 
 
 class TestIpNetworkBackend(unittest.TestCase):

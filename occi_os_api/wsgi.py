@@ -51,13 +51,13 @@ LOG = logging.getLogger(__name__)
 
 #Setup options
 OCCI_OPTS = [
-             cfg.IntOpt("occiapi_listen_port",
-                        default=8787,
-                        help="Port OCCI interface will listen on."),
-             cfg.StrOpt("occi_custom_location_hostname",
-                    default=None,
-                    help="Override OCCI location hostname with custom value")
-             ]
+    cfg.IntOpt("occiapi_listen_port",
+               default=8787,
+               help="Port OCCI interface will listen on."),
+    cfg.StrOpt("occi_custom_location_hostname",
+               default=None,
+               help="Override OCCI location hostname with custom value")
+]
 
 FLAGS = flags.FLAGS
 FLAGS.register_opts(OCCI_OPTS)
@@ -105,10 +105,10 @@ class OCCIApplication(occi_wsgi.Application, wsgi.Application):
         self.register_backend(infrastructure.UP, network_backend)
         self.register_backend(infrastructure.DOWN, network_backend)
         self.register_backend(infrastructure.NETWORKINTERFACE,
-                                          networkinterface_backend)
+                              networkinterface_backend)
         self.register_backend(infrastructure.IPNETWORK, ipnetwork_backend)
         self.register_backend(infrastructure.IPNETWORKINTERFACE,
-                                          ipnetworking_backend)
+                              ipnetworking_backend)
 
         self.register_backend(infrastructure.STORAGE, storage_backend)
         self.register_backend(infrastructure.ONLINE, storage_backend)
@@ -120,19 +120,19 @@ class OCCIApplication(occi_wsgi.Application, wsgi.Application):
 
         # add extensions for occi.
         self.register_backend(os_addon.SEC_GROUP,
-            openstack.SecurityGroupBackend())
+                              openstack.SecurityGroupBackend())
         self.register_backend(os_addon.SEC_RULE,
-            openstack.SecurityRuleBackend())
+                              openstack.SecurityRuleBackend())
         self.register_backend(os_addon.OS_VM,
-            openstack.OsComputeBackend())
+                              openstack.OsComputeBackend())
         self.register_backend(os_addon.OS_CREATE_IMAGE,
-            openstack.OsComputeBackend())
+                              openstack.OsComputeBackend())
         self.register_backend(os_addon.OS_KEY_PAIR_EXT,
-            openstack.OsComputeBackend())
+                              openstack.OsComputeBackend())
         self.register_backend(os_addon.OS_CHG_PWD,
-            openstack.OsComputeBackend())
+                              openstack.OsComputeBackend())
         self.register_backend(os_addon.OS_NET_LINK,
-            openstack.OsNetLinkBackend())
+                              openstack.OsNetLinkBackend())
 
     def __call__(self, environ, response):
         """
@@ -156,7 +156,7 @@ class OCCIApplication(occi_wsgi.Application, wsgi.Application):
         self._refresh_security_mixins(extras)
 
         return self._call_occi(environ, response, nova_ctx=extras['nova_ctx'],
-                                                        registry=self.registry)
+                               registry=self.registry)
 
     def _refresh_os_mixins(self, extras):
         """
@@ -177,15 +177,15 @@ class OCCIApplication(occi_wsgi.Application, wsgi.Application):
                 LOG.debug(msg)
                 continue
             ctg_term = occify_terms(img['name'])
-            os_template = os_mixins.OsTemplate(
-                                term=ctg_term,
-                                scheme=template_schema,
-                                os_id=img['id'],
-                                related=[infrastructure.OS_TEMPLATE],
-                                attributes=None,
-                                title='This is an OS ' + img['name'] + \
-                                                            ' VM image',
-                                location='/' + ctg_term + '/')
+            os_template = os_mixins.OsTemplate(term=ctg_term,
+                                               scheme=template_schema,
+                                               os_id=img['id'],
+                                               related=[infrastructure.
+                                                        OS_TEMPLATE],
+                                               attributes=None,
+                                               title='This is an OS ' +
+                                                     img['name'] + ' VM image',
+                                               location='/' + ctg_term + '/')
 
             try:
                 self.registry.get_backend(os_template, extras)
@@ -230,30 +230,32 @@ class OCCIApplication(occi_wsgi.Application, wsgi.Application):
         excld_grps = []
         for cat in self.registry.get_categories(extras):
             if (isinstance(cat, core_model.Mixin) and
-                                    os_addon.SEC_GROUP in cat.related):
+                    os_addon.SEC_GROUP in cat.related):
                 excld_grps.append(cat.term)
 
         groups = db.security_group_get_by_project(extras['nova_ctx'],
-                                                extras['nova_ctx'].project_id)
+                                                  extras['nova_'
+                                                         'ctx'].project_id)
         sec_grp = 'http://schemas.openstack.org/infrastructure/security/group#'
 
         for group in groups:
             if group['name'] not in excld_grps:
                 sec_mix = os_mixins.UserSecurityGroupMixin(
-                term=str(group["id"]),  # NOTE(aloga): group.id is a long
-                scheme=sec_grp,
-                related=[os_addon.SEC_GROUP],
-                attributes=None,
-                title=group['name'],
-                location='/security/' + quote(str(group['id'])) + '/')
+                    term=str(group["id"]),
+                    scheme=sec_grp,
+                    related=[os_addon.SEC_GROUP],
+                    attributes=None,
+                    title=group['name'],
+                    location='/security/' + quote(str(group['name'])) + '/')
                 try:
                     self.registry.get_backend(sec_mix, extras)
                 except AttributeError:
                     self.register_backend(sec_mix, MIXIN_BACKEND)
 
+
 def occify_terms(term_name):
     '''
     Occifies a term_name so that it is compliant with GFD 185.
     '''
-    term = term_name.strip().replace(' ', '_').replace('.','-').lower()
+    term = term_name.strip().replace(' ', '_').replace('.', '-').lower()
     return term
