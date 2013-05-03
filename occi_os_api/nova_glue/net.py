@@ -56,7 +56,10 @@ def get_network_details(uid, context):
     gw = net_info['network']['subnets'][0]['gateway']['address']
     mac = net_info['address']
 
-    tmp = net_info['network']['subnets'][0]['ips'][0]
+    if len(net_info['network']['subnets'][0]['ips']) == 0:
+        tmp = {'floating_ips': [], 'address': '0.0.0.0'}
+    else:
+        tmp = net_info['network']['subnets'][0]['ips'][0]
     for item in tmp['floating_ips']:
         result['public'].append({'interface': 'eth0',
                                  'mac': 'aa:bb:cc:dd:ee:ff',

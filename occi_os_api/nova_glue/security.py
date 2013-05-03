@@ -62,8 +62,8 @@ def remove_group(group_id, context):
     context -- The os context.
     """
     try:
-        if db.security_group_in_use(context, group_id):
-            raise AttributeError('Security group is still in use')
+        #if db.security_group_in_use(context, group_id):
+        #    raise AttributeError('Security group is still in use')
 
         db.security_group_destroy(context, group_id)
         SEC_HANDLER.trigger_security_group_destroy_refresh(
@@ -81,14 +81,10 @@ def retrieve_group(mixin_term, context):
     context -- The os context.
     """
     try:
-        sec_group = db.security_group_get(context,
-                                          mixin_term)
-    except Exception:
-        # ensure that an OpenStack sec group matches the mixin
-        # if not, create one.
-        # This has to be done as pyssf has no way to associate
-        # a handler for the creation of mixins at the query interface
-        msg = 'Security group does not exist.'
+        sec_group = db.security_group_get_by_name(context, context.project_id,
+                                                  mixin_term)
+    except Exception as err:
+        msg = err.message
         raise AttributeError(msg)
 
     return sec_group

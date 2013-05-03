@@ -254,14 +254,13 @@ class SystemTest(unittest.TestCase):
         do_request('POST', '/-/', heads)
 
         # create sec rule
-        cats = [name + '; scheme="http://www.mystuff.org/sec#"',
+        cats = [name + '; scheme="http://www.mystuff.org/sec#";',
                 'rule; scheme="http://schemas.openstack'
-                '.org/occi/infrastructure/network/security#"']
+                '.org/occi/infrastructure/network/security#";']
         attrs = ['occi.network.security.protocol="tcp"',
                  'occi.network.security.to="22"',
                  'occi.network.security.from="22"',
                  'occi.network.security.range="0.0.0.0/0"']
-        print cats
         sec_rule_loc = create_node(self.token, cats, attrs)
 
         # list
