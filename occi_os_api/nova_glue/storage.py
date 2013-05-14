@@ -110,7 +110,10 @@ def get_image(uid, context):
     """
     Return details on an image.
     """
-    return IMAGE_API.show(context, uid)
+    try:
+        return IMAGE_API.show(context, uid)
+    except exception.ImageNotFound as err:
+        raise AttributeError(str(err))
 
 
 def get_image_architecture(uid, context):
