@@ -26,7 +26,7 @@ from setuptools import setup
 
 
 setup(
-    name='occi-os-grizzly',
+    name='openstackocci-grizzly',
     version='1.0',
     description='OCCI interface for Openstack (stable/grizzly).',
     long_description='''
