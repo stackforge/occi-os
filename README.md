@@ -12,7 +12,7 @@ Usage
 
 0. Install dependencies: `pip install pyssf`
 1. Install this egg: `python setup.py install` (or `pip install
-occi-os-folsom`)
+openstackocci-grizzly`)
 2. Configure OpenStack - Add application to `api-paste.ini` of nova and
 enable the API
 
@@ -39,7 +39,7 @@ picked yourself):
 	# pipeline = sizelimit authtoken keystonecontext ratelimit occiapp
 
 	[app:occiapp]
-	use = egg:occi-os-folsom#occi_app
+	use = egg:openstackocci-grizzly#occi_app
 
 Make sure the API (name from above) is enabled in `nova.conf`:
 
@@ -59,6 +59,14 @@ file - default is 8787:
 There is further documentation on [setting up your development environment
 in the wiki](https://github.com/tmetsch/occi-os/wiki/DevEnv).
 
+#Versioning
+
+The general naming scheme for the Python eggs is:
+
+* openstackocci - for the latest and greatest
+* openstackocci-\<openstack release name\> - for OpenStack release specific stable releases
+
 # Deployment using Puppet
 This library can be integrated using puppet as a configuration management tool.
 See [this blog post for more details](http://www.cloudcomp.ch/2012/09/automating-occi-installations/).
+
